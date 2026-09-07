@@ -1,0 +1,11 @@
+# 快捷编排：实际完整配置见 deploy/docker-compose.yml
+# 用法：在本文件所在目录执行
+#   docker-compose -f deploy/docker-compose.yml up -d --build
+version: '3.8'
+
+services:
+  # 占位说明：真正的服务编排在 deploy/ 目录，避免重复维护。
+  # 如需一键启动，请使用：cd deploy && docker-compose up -d --build
+  info:
+    image: busybox
+    command: echo "请使用 deploy/docker-compose.yml 进行部署"
