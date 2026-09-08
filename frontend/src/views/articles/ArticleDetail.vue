@@ -9,7 +9,16 @@
           <span>点赞 {{ article.like_count }}</span>
         </div>
         <div v-if="article.summary" class="article-detail__summary">{{ article.summary }}</div>
-        <div class="article-detail__content" v-html="article.content_html || article.content"></div>
+        <div class="article-detail__actions">
+          <el-button
+            :type="liked ? 'danger' : 'default'"
+            :loading="liking"
+            @click="onLike"
+          >
+            {{ liked ? '取消点赞' : '点赞' }}
+          </el-button>
+        </div>
+        <MarkdownPreview :content="article.content" />
       </template>
     </el-card>
   </div>
@@ -18,12 +27,16 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
-import { getArticle } from '@/api/article'
+import { ElMessage } from 'element-plus'
+import MarkdownPreview from '@/components/MarkdownPreview.vue'
+import { getArticle, toggleArticleLike, unlikeArticle } from '@/api/article'
 import type { Article } from '@/types/article'
 import { formatDateTime } from '@/utils/format'
 
 const route = useRoute()
 const loading = ref(false)
+const liking = ref(false)
+const liked = ref(false)
 const article = ref<Article | null>(null)
 
 async function load() {
@@ -34,6 +47,25 @@ async function load() {
     // 错误提示已统一处理
   } finally {
     loading.value = false
+  }
+}
+
+async function onLike() {
+  if (!article.value) return
+  liking.value = true
+  try {
+    if (liked.value) {
+      const res = await unlikeArticle(article.value.id)
+      article.value.like_count = res.like_count
+    } else {
+      const res = await toggleArticleLike(article.value.id)
+      article.value.like_count = res.like_count
+    }
+    liked.value = !liked.value
+  } catch (e) {
+    // 错误提示已统一处理
+  } finally {
+    liking.value = false
   }
 }
 
@@ -56,6 +88,9 @@ onMounted(load)
   padding: 12px;
   background: #f5f7fa;
   border-radius: 4px;
+  margin-bottom: 16px;
+}
+.article-detail__actions {
   margin-bottom: 16px;
 }
 .article-detail__content {

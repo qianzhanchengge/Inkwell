@@ -28,6 +28,7 @@
           <template #default="{ row }">
             <el-button link type="primary" @click="goEdit(row.id)">编辑</el-button>
             <el-button v-if="row.status === 0" link type="success" @click="onPublish(row.id)">发布</el-button>
+            <el-button v-if="row.status === 1" link type="warning" @click="onUnpublish(row.id)">下架</el-button>
             <el-button link type="danger" @click="onDelete(row.id)">删除</el-button>
           </template>
         </el-table-column>
@@ -50,7 +51,7 @@ import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import PageHeader from '@/components/PageHeader.vue'
 import Pagination from '@/components/Pagination.vue'
-import { getMyArticles, deleteArticle, publishArticle } from '@/api/article'
+import { getMyArticles, deleteArticle, publishArticle, unpublishArticle } from '@/api/article'
 import type { Article } from '@/types/article'
 import { ARTICLE_STATUS } from '@/utils/constants'
 
@@ -87,6 +88,11 @@ function goEdit(id: number) {
 async function onPublish(id: number) {
   await publishArticle(id)
   ElMessage.success('发布成功')
+  load()
+}
+async function onUnpublish(id: number) {
+  await unpublishArticle(id)
+  ElMessage.success('已下架')
   load()
 }
 async function onDelete(id: number) {

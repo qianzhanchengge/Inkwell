@@ -1,28 +1,38 @@
 <template>
   <div class="article-public">
     <h1 class="article-public__title">文章广场</h1>
-    <el-card v-loading="loading">
-      <el-table :data="articles" style="width: 100%">
-        <el-table-column prop="title" label="标题" min-width="240">
-          <template #default="{ row }">
-            <router-link :to="`/p/articles/${row.id}`">{{ row.title }}</router-link>
-          </template>
-        </el-table-column>
-        <el-table-column prop="summary" label="摘要" min-width="280" show-overflow-tooltip />
-        <el-table-column prop="view_count" label="阅读量" width="100" />
-        <el-table-column label="发布时间" width="180">
-          <template #default="{ row }">{{ formatDateTime(row.published_at) }}</template>
-        </el-table-column>
-      </el-table>
 
-      <Pagination
-        :page="page"
-        :page-size="pageSize"
-        :total="total"
-        @update:page="onPageChange"
-        @update:page-size="onSizeChange"
-      />
-    </el-card>
+    <div v-loading="loading" class="article-public__grid">
+      <el-card
+        v-for="article in articles"
+        :key="article.id"
+        class="article-public__card"
+        shadow="hover"
+      >
+        <div v-if="article.cover_image" class="article-public__cover">
+          <img :src="article.cover_image" :alt="article.title" />
+        </div>
+        <router-link :to="`/p/articles/${article.id}`" class="article-public__link">
+          {{ article.title }}
+        </router-link>
+        <p class="article-public__summary">{{ article.summary || '暂无摘要' }}</p>
+        <div class="article-public__meta">
+          <span>阅读 {{ article.view_count }}</span>
+          <span>点赞 {{ article.like_count }}</span>
+          <span v-if="article.published_at">{{ formatDateTime(article.published_at) }}</span>
+        </div>
+      </el-card>
+
+      <el-empty v-if="!loading && articles.length === 0" description="暂无文章" />
+    </div>
+
+    <Pagination
+      :page="page"
+      :page-size="pageSize"
+      :total="total"
+      @update:page="onPageChange"
+      @update:page-size="onSizeChange"
+    />
   </div>
 </template>
 
@@ -66,12 +76,51 @@ onMounted(load)
 
 <style scoped lang="scss">
 .article-public {
-  max-width: 960px;
+  max-width: 1080px;
   margin: 0 auto;
   padding: 24px 16px;
 }
 .article-public__title {
   margin: 0 0 16px;
   font-size: 24px;
+}
+.article-public__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+}
+.article-public__card {
+  display: flex;
+  flex-direction: column;
+}
+.article-public__cover img {
+  width: 100%;
+  height: 160px;
+  object-fit: cover;
+  border-radius: 4px;
+  margin-bottom: 12px;
+}
+.article-public__link {
+  font-size: 17px;
+  font-weight: 600;
+  color: #303133;
+  text-decoration: none;
+  margin-bottom: 8px;
+  &:hover {
+    color: #409eff;
+  }
+}
+.article-public__summary {
+  color: #909399;
+  font-size: 13px;
+  line-height: 1.6;
+  min-height: 40px;
+  margin: 0 0 12px;
+}
+.article-public__meta {
+  display: flex;
+  gap: 12px;
+  color: #c0c4cc;
+  font-size: 12px;
 }
 </style>

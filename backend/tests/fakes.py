@@ -34,6 +34,7 @@ class FakeRedis:
 
     def __init__(self):
         self._store: dict = {}
+        self._hashes: dict = {}
 
     async def get(self, key):
         return self._store.get(key)
@@ -51,6 +52,11 @@ class FakeRedis:
         cur = int(self._store.get(key, 0)) + 1
         self._store[key] = str(cur)
         return cur
+
+    async def hincrby(self, name, key, amount=1):
+        h = self._hashes.setdefault(name, {})
+        h[key] = int(h.get(key, 0)) + amount
+        return h[key]
 
     async def expire(self, key, ttl):
         return True
@@ -248,14 +254,28 @@ class _FakeSession:
                 obj.status = 1
             if getattr(obj, "is_pinned", None) is None:
                 obj.is_pinned = 0
+        elif isinstance(obj, Article):
+            if getattr(obj, "status", None) is None:
+                obj.status = 0
+            if getattr(obj, "view_count", None) is None:
+                obj.view_count = 0
+            if getattr(obj, "like_count", None) is None:
+                obj.like_count = 0
+            if getattr(obj, "summary", None) is None:
+                obj.summary = ""
+            if getattr(obj, "cover_image", None) is None:
+                obj.cover_image = ""
         elif isinstance(obj, Category):
             if getattr(obj, "sort_order", None) is None:
                 obj.sort_order = 0
 
     def _hydrate(self, obj):
-        """把关系字段（如 note.tags）从多对多关系集合填充为普通列表。"""
+        """把关系字段（如 note.tags / article.tags）从多对多关系集合填充为普通列表。"""
         if isinstance(obj, Note):
             tag_ids = sorted({t for (n, t) in self.factory.note_tags_rel if n == obj.id})
+            obj.tags = [t for t in self.factory.rows(Tag) if t.id in tag_ids]
+        if isinstance(obj, Article):
+            tag_ids = sorted({t for (a, t) in self.factory.article_tags_rel if a == obj.id})
             obj.tags = [t for t in self.factory.rows(Tag) if t.id in tag_ids]
         return obj
 
@@ -389,6 +409,11 @@ class FakeCollection:
         return _FakeUpdateResult(0)
 
     async def delete_many(self, query):
+        before = len(self._docs)
+        self._docs = [d for d in self._docs if not _doc_matches(d, query)]
+        return _FakeDeleteResult(before - len(self._docs))
+
+    async def delete_one(self, query):
         before = len(self._docs)
         self._docs = [d for d in self._docs if not _doc_matches(d, query)]
         return _FakeDeleteResult(before - len(self._docs))

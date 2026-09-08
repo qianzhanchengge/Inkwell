@@ -38,6 +38,10 @@ export function toggleArticleLike(id: number | string): Promise<Article> {
   return request.post(`/articles/${id}/like`)
 }
 
+export function unlikeArticle(id: number | string): Promise<Article> {
+  return request.post(`/articles/${id}/like?like=false`)
+}
+
 export function searchArticles(keyword: string, params?: ArticleListParams): Promise<PageResult<Article>> {
   return request.get('/articles/search', { params: { ...params, keyword } })
 }

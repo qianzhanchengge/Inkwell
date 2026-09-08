@@ -26,6 +26,7 @@
         </el-form-item>
         <el-form-item>
           <el-button type="primary" :loading="saving" @click="onSave">保存草稿</el-button>
+          <el-button type="success" :loading="publishing" @click="onPublish">发布</el-button>
           <el-button @click="goBack">取消</el-button>
         </el-form-item>
       </el-form>
@@ -40,7 +41,7 @@ import { ElMessage } from 'element-plus'
 import PageHeader from '@/components/PageHeader.vue'
 import MarkdownEditor from '@/components/MarkdownEditor.vue'
 import TagSelector from '@/components/TagSelector.vue'
-import { createArticle, updateArticle, getArticle } from '@/api/article'
+import { createArticle, updateArticle, getArticle, publishArticle } from '@/api/article'
 import { getCategoryList } from '@/api/category'
 import { getTagList } from '@/api/tag'
 import type { Category, Tag } from '@/types/api'
@@ -48,6 +49,7 @@ import type { Category, Tag } from '@/types/api'
 const route = useRoute()
 const router = useRouter()
 const saving = ref(false)
+const publishing = ref(false)
 const categories = ref<Category[]>([])
 const tagOptions = ref<Tag[]>([])
 const form = reactive({
@@ -78,6 +80,10 @@ async function loadArticle() {
 }
 
 async function onSave() {
+  if (!form.title || !form.content) {
+    ElMessage.warning('标题和内容不能为空')
+    return
+  }
   saving.value = true
   try {
     if (isEdit.value) {
@@ -91,6 +97,31 @@ async function onSave() {
     // 错误提示已统一处理
   } finally {
     saving.value = false
+  }
+}
+
+async function onPublish() {
+  if (!form.title || !form.content) {
+    ElMessage.warning('标题和内容不能为空')
+    return
+  }
+  publishing.value = true
+  try {
+    let id: number
+    if (isEdit.value) {
+      const res = await updateArticle(route.params.id as string, form)
+      id = res.id
+    } else {
+      const res = await createArticle(form)
+      id = res.id
+    }
+    await publishArticle(id)
+    ElMessage.success('发布成功')
+    router.push('/articles')
+  } catch (e) {
+    // 错误提示已统一处理
+  } finally {
+    publishing.value = false
   }
 }
 
