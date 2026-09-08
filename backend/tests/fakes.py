@@ -30,7 +30,7 @@ _MODEL_BY_TABLE = {
 
 
 class FakeRedis:
-    """内存版异步 Redis，覆盖认证/限流/黑名单/缓存所需的命令。"""
+    """内存版异步 Redis，覆盖认证/限流/黑名单/缓存/统计所需的命令。"""
 
     def __init__(self):
         self._store: dict = {}
@@ -38,6 +38,13 @@ class FakeRedis:
 
     async def get(self, key):
         return self._store.get(key)
+
+    async def hgetall(self, key):
+        return dict(self._hashes.get(key, {}))
+
+    async def hset(self, key, field, value):
+        self._hashes.setdefault(key, {})[field] = value
+        return 1
 
     async def set(self, key, value, ex=None):
         self._store[key] = value
@@ -99,6 +106,16 @@ def _matches(obj, where) -> bool:
             return actual in list(val or [])
         if opname in ("is_", "is_not"):
             return (actual is val) if opname == "is_" else (actual is not val)
+        if opname == "ge":
+            return actual >= val
+        if opname == "le":
+            return actual <= val
+        if opname == "gt":
+            return actual > val
+        if opname == "lt":
+            return actual < val
+        if opname == "ne":
+            return actual != val
         return actual == val
     return True
 
@@ -293,11 +310,25 @@ class _FakeSession:
         return list(rows)
 
     def _handle_count(self, statement):
-        inner = statement.get_final_froms()[0].element
-        model = _model_of(inner)
+        where = statement.whereclause
+        model = _model_of(statement)
+        if model is None:
+            for from_obj in statement.get_final_froms():
+                inner = getattr(from_obj, "element", None)
+                if inner is not None:
+                    m = _model_of(inner)
+                    if m is not None:
+                        model = m
+                        where = getattr(inner, "whereclause", where)
+                        break
+                name = getattr(from_obj, "name", None)
+                m = _MODEL_BY_TABLE.get(name)
+                if m is not None:
+                    model = m
+                    break
         if model is None:
             return 0
-        return len([r for r in self.factory.rows(model) if _matches(r, inner.whereclause)])
+        return len([r for r in self.factory.rows(model) if _matches(r, where)])
 
     def _handle_insert(self, statement):
         tname = statement.table.name
