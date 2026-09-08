@@ -32,7 +32,15 @@ request.interceptors.response.use(
     return res.data
   },
   (error) => {
-    ElMessage.error(error.message || '网络错误')
+    const status = error.response?.status
+    const msg = error.response?.data?.message || error.message || '网络错误'
+    if (status === 401) {
+      removeToken()
+      if (router.currentRoute.value.path !== '/login') {
+        router.push('/login')
+      }
+    }
+    ElMessage.error(msg)
     return Promise.reject(error)
   }
 )

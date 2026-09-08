@@ -5,6 +5,7 @@ from sqlalchemy import (
     BigInteger,
     Column,
     DateTime,
+    ForeignKey,
     SmallInteger,
     String,
     Table,
@@ -19,8 +20,8 @@ note_tags = Table(
     "note_tags",
     Base.metadata,
     Column("id", BigInteger, primary_key=True, autoincrement=True),
-    Column("note_id", BigInteger, nullable=False, index=True),
-    Column("tag_id", BigInteger, nullable=False, index=True),
+    Column("note_id", BigInteger, ForeignKey("notes.id"), nullable=False, index=True),
+    Column("tag_id", BigInteger, ForeignKey("tags.id"), nullable=False, index=True),
     UniqueConstraint("note_id", "tag_id", name="uk_note_tag"),
 )
 

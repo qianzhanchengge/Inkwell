@@ -81,7 +81,9 @@ CREATE TABLE IF NOT EXISTS note_tags (
     tag_id BIGINT NOT NULL,
     UNIQUE KEY uk_note_tag (note_id, tag_id),
     INDEX idx_note_id (note_id),
-    INDEX idx_tag_id (tag_id)
+    INDEX idx_tag_id (tag_id),
+    FOREIGN KEY (note_id) REFERENCES notes(id),
+    FOREIGN KEY (tag_id) REFERENCES tags(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS article_tags (
@@ -90,5 +92,7 @@ CREATE TABLE IF NOT EXISTS article_tags (
     tag_id BIGINT NOT NULL,
     UNIQUE KEY uk_article_tag (article_id, tag_id),
     INDEX idx_article_id (article_id),
-    INDEX idx_tag_id (tag_id)
+    INDEX idx_tag_id (tag_id),
+    FOREIGN KEY (article_id) REFERENCES articles(id),
+    FOREIGN KEY (tag_id) REFERENCES tags(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

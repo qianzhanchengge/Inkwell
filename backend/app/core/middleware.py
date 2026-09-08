@@ -9,8 +9,9 @@ from app.database.redis import get_redis
 from app.utils.logger import logger
 
 # 需要限流的路径：路径 -> (窗口秒数, 最大次数)
+# 注意：路径包含 /api/v1 前缀（app.include_router 时拼上 settings.API_V1_PREFIX）
 RATE_LIMIT_RULES = {
-    "/auth/login": (60, 5),
+    "/api/v1/auth/login": (60, 5),
 }
 
 

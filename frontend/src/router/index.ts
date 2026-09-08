@@ -61,6 +61,8 @@ router.beforeEach((to, _from, next) => {
   const isPublic = to.meta.public === true
   if (!isPublic && !token) {
     next({ path: '/login', query: { redirect: to.fullPath } })
+  } else if ((to.path === '/login' || to.path === '/register') && token) {
+    next({ path: '/dashboard' })
   } else {
     next()
   }

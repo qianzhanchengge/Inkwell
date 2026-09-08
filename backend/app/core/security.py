@@ -1,4 +1,5 @@
 """认证与安全：密码哈希（bcrypt）与 JWT 编解码（§6.2.2）。"""
+import time
 import uuid
 from datetime import datetime, timedelta, timezone
 
@@ -63,3 +64,20 @@ def create_refresh_token(user_id: int, username: str, jti: str) -> str:
 
 def decode_token(token: str) -> dict:
     return jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+
+
+def token_remaining_ttl(token: str) -> int:
+    """计算 Token 剩余有效秒数，用于黑名单 TTL（对齐 Token 过期时间）。
+
+    无法解析或已过期时回退为默认 access token 生命周期（保守拉黑）。
+    """
+    try:
+        payload = decode_token(token)
+        exp = payload.get("exp")
+        if exp:
+            remaining = int(exp - time.time())
+            if remaining > 0:
+                return remaining
+    except Exception:
+        pass
+    return settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60

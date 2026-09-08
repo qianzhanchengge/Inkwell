@@ -2,11 +2,11 @@
   <div class="auth-page">
     <el-card class="auth-card">
       <h2 class="auth-card__title">登录</h2>
-      <el-form :model="form" @submit.prevent="onSubmit">
-        <el-form-item>
+      <el-form ref="formRef" :model="form" :rules="rules" @submit.prevent="onSubmit">
+        <el-form-item prop="username">
           <el-input v-model="form.username" placeholder="用户名" />
         </el-form-item>
-        <el-form-item>
+        <el-form-item prop="password">
           <el-input v-model="form.password" type="password" placeholder="密码" show-password />
         </el-form-item>
         <el-form-item>
@@ -24,24 +24,37 @@
 
 <script setup lang="ts">
 import { reactive, ref } from 'vue'
-import { useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
-import { login } from '@/api/auth'
-import { useUserStore } from '@/stores/user'
+import { useRoute, useRouter } from 'vue-router'
+import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
+import { useAuth } from '@/composables/useAuth'
 
+const route = useRoute()
 const router = useRouter()
-const userStore = useUserStore()
+const { login } = useAuth()
+
+const formRef = ref<FormInstance>()
 const loading = ref(false)
 const form = reactive({ username: '', password: '' })
 
+const rules: FormRules = {
+  username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
+  password: [{ required: true, message: '请输入密码', trigger: 'blur' }]
+}
+
 async function onSubmit() {
+  if (!formRef.value) return
+  try {
+    await formRef.value.validate()
+  } catch {
+    return
+  }
   loading.value = true
   try {
-    const data = await login(form)
-    userStore.setAuthToken(data.access_token)
+    await login({ username: form.username, password: form.password })
     ElMessage.success('登录成功')
-    router.push('/dashboard')
-  } catch (e) {
+    const redirect = (route.query.redirect as string) || '/dashboard'
+    router.push(redirect)
+  } catch {
     // 错误提示已由 axios 拦截器统一处理
   } finally {
     loading.value = false

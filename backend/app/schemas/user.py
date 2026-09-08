@@ -35,6 +35,10 @@ class PasswordUpdate(BaseModel):
     new_password: str = Field(..., min_length=6, max_length=128)
 
 
+class RefreshRequest(BaseModel):
+    refresh_token: str
+
+
 class UserOut(BaseModel):
     id: int
     username: str

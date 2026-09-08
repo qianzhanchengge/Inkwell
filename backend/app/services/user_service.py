@@ -1,9 +1,11 @@
 """用户业务逻辑。"""
 from sqlalchemy import select
 
+from app.config import settings
 from app.core.exceptions import NotFoundException, UnauthorizedException
-from app.core.security import hash_password, verify_password
+from app.core.security import hash_password, token_remaining_ttl, verify_password
 from app.database.mysql import get_session_factory
+from app.database.redis import get_redis
 from app.models.user import User
 from app.schemas.user import PasswordUpdate, UserProfileUpdate
 
@@ -38,7 +40,9 @@ async def update_profile(user_id: int, data: UserProfileUpdate) -> User:
         return user
 
 
-async def change_password(user_id: int, data: PasswordUpdate) -> None:
+async def change_password(
+    user_id: int, data: PasswordUpdate, jti: str = "", token: str = ""
+) -> None:
     factory = get_session_factory()
     async with factory() as session:
         result = await session.execute(select(User).where(User.id == user_id))
@@ -50,3 +54,10 @@ async def change_password(user_id: int, data: PasswordUpdate) -> None:
 
         user.password_hash = hash_password(data.new_password)
         await session.commit()
+
+    # 修改密码后使旧会话失效（拉黑当前 jti 并清除会话 Token）
+    if jti:
+        redis = get_redis()
+        ttl = token_remaining_ttl(token) if token else settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60
+        await redis.set(f"token:blacklist:{jti}", "1", ex=ttl)
+        await redis.delete(f"user:token:{user_id}")
