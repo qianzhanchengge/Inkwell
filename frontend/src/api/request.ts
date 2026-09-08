@@ -4,7 +4,9 @@ import router from '@/router'
 import { getToken, removeToken } from '@/utils/auth'
 
 const request = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL,
+  // 默认走同源 /api/v1：开发环境由 vite 代理转发到后端，生产由 Nginx 代理
+  // 若设置了 VITE_API_BASE_URL（如直连后端）则优先生效
+  baseURL: import.meta.env.VITE_API_BASE_URL || '/api/v1',
   timeout: 15000
 })
 
