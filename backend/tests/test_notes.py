@@ -27,6 +27,9 @@ def notes_env(monkeypatch, fake_redis, fake_db, fake_mongo):
     monkeypatch.setattr(note_service, "get_session_factory", lambda: fake_db)
     monkeypatch.setattr(note_service, "get_note_contents", lambda: fake_mongo["note_contents"])
     monkeypatch.setattr(note_service, "cache_invalidate_pattern", _noop)
+    # 列表读缓存在单测中用 noop（缓存命中返回 None = 未命中；写缓存不落盘）
+    monkeypatch.setattr(note_service, "cache_get", _noop)
+    monkeypatch.setattr(note_service, "cache_set", _noop)
     monkeypatch.setattr(category_service, "get_session_factory", lambda: fake_db)
     monkeypatch.setattr(tag_service, "get_session_factory", lambda: fake_db)
     return fake_db, fake_mongo
@@ -278,3 +281,31 @@ async def test_delete_tag_cleans_note_association(auth, client):
 
     get = await client.get(f"/api/v1/notes/{note_id}", headers=headers)
     assert get.json()["data"]["tags"] == []
+
+
+@pytest.mark.asyncio
+async def test_list_notes_by_tag(auth, client):
+    """§5.4：列表支持按标签筛选。"""
+    headers, _ = auth
+    n1 = await _create_note(client, headers, {"title": "带标签甲", "content": "正文", "tags": ["甲"]})
+    tag_id = n1.json()["data"]["tags"][0]["id"]
+    await _create_note(client, headers, {"title": "带标签乙", "content": "正文", "tags": ["乙"]})
+    resp = await client.get(f"/api/v1/notes?tag_id={tag_id}", headers=headers)
+    data = resp.json()["data"]
+    assert data["total"] == 1
+    assert data["items"][0]["title"] == "带标签甲"
+
+
+@pytest.mark.asyncio
+async def test_search_total_after_soft_delete(auth, client):
+    """搜索 total 以 MySQL 有效笔记数为准（软删除后不计入命中数）。"""
+    headers, _ = auth
+    created = await _create_note(client, headers, {"title": "将被删", "content": "独特关键字Z9KQ正文"})
+    note_id = created.json()["data"]["id"]
+    resp = await client.get("/api/v1/notes/search?keyword=Z9KQ", headers=headers)
+    assert resp.json()["data"]["total"] == 1
+    await client.delete(f"/api/v1/notes/{note_id}", headers=headers)
+    resp = await client.get("/api/v1/notes/search?keyword=Z9KQ", headers=headers)
+    data = resp.json()["data"]
+    assert data["total"] == 0
+    assert data["items"] == []

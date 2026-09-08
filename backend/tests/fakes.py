@@ -9,7 +9,8 @@ from __future__ import annotations
 import re
 from datetime import datetime
 
-from sqlalchemy import func
+from sqlalchemy import Select, func
+from sqlalchemy.sql.selectable import ScalarSelect
 from sqlalchemy.sql.dml import Delete, Insert, Update
 from sqlalchemy.sql.elements import BinaryExpression, BooleanClauseList
 
@@ -84,12 +85,46 @@ def _right_value(right):
     return right
 
 
-def _matches(obj, where) -> bool:
+_ASSOC_REL = {"note_tags": "note_tags_rel", "article_tags": "article_tags_rel"}
+
+
+def _resolve_in_subquery(factory, stmt) -> list:
+    """解析 select(table.c.col).where(...) 形式的关联表子查询，返回一列标量列表。"""
+    try:
+        froms = stmt.get_final_froms()
+    except Exception:
+        return []
+    if not froms:
+        return []
+    table = froms[0]
+    tname = getattr(table, "name", None)
+    rel = getattr(factory, _ASSOC_REL.get(tname, ""), None)
+    if rel is None:
+        return []
+    cond = {}
+    for w in stmt._where_criteria:
+        if isinstance(w, BinaryExpression):
+            key = getattr(w.left, "key", None) or getattr(w.left, "name", None)
+            if key in ("note_id", "tag_id", "article_id") and getattr(w.operator, "__name__", "") == "eq":
+                cond[key] = _right_value(w.right)
+    cols = [getattr(c, "key", None) for c in stmt.selected_columns]
+    out = []
+    for pair in rel:
+        a, b = pair
+        row = {"note_id": a, "article_id": a, "tag_id": b}
+        if all(row.get(k) == v for k, v in cond.items()):
+            for c in cols:
+                if c in row:
+                    out.append(row[c])
+    return out
+
+
+def _matches(obj, where, factory=None) -> bool:
     """按 SQLAlchemy whereclause 判断 obj 是否命中。"""
     if where is None:
         return True
     if isinstance(where, BooleanClauseList):
-        return all(_matches(obj, c) for c in where.clauses)
+        return all(_matches(obj, c, factory) for c in where.clauses)
     if isinstance(where, BinaryExpression):
         left = where.left
         right = where.right
@@ -103,6 +138,8 @@ def _matches(obj, where) -> bool:
             regex = "^" + re.escape(str(val)).replace("%", ".*") + "$"
             return bool(re.match(regex, str(actual)))
         if opname == "in_op":
+            if isinstance(val, (Select, ScalarSelect)):
+                return actual in (_resolve_in_subquery(factory, val) if factory else [])
             return actual in list(val or [])
         if opname in ("is_", "is_not"):
             return (actual is val) if opname == "is_" else (actual is not val)
@@ -300,7 +337,7 @@ class _FakeSession:
         model = _model_of(statement)
         if model is None:
             return []
-        rows = [r for r in self.factory.rows(model) if _matches(r, statement.whereclause)]
+        rows = [r for r in self.factory.rows(model) if _matches(r, statement.whereclause, self.factory)]
         offset = getattr(statement, "_offset", 0) or 0
         limit = getattr(statement, "_limit", None)
         if limit is not None:
@@ -328,7 +365,7 @@ class _FakeSession:
                     break
         if model is None:
             return 0
-        return len([r for r in self.factory.rows(model) if _matches(r, where)])
+        return len([r for r in self.factory.rows(model) if _matches(r, where, self.factory)])
 
     def _handle_insert(self, statement):
         tname = statement.table.name
@@ -360,7 +397,7 @@ class _FakeSession:
         model = _MODEL_BY_TABLE.get(statement.table.name)
         if model is None:
             return
-        rows = [r for r in self.factory.rows(model) if _matches(r, statement.whereclause)]
+        rows = [r for r in self.factory.rows(model) if _matches(r, statement.whereclause, self.factory)]
         vals = _dml_values(statement)
         for r in rows:
             for k, v in vals.items():

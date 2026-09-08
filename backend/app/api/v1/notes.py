@@ -15,11 +15,14 @@ router = APIRouter(prefix="/notes", tags=["笔记"])
 async def list_notes(
     category_id: Optional[int] = Query(None),
     keyword: Optional[str] = Query(None),
+    tag_id: Optional[int] = Query(None),
     pagination=Depends(get_pagination),
     user_id: int = Depends(get_current_user_id),
 ):
     page, page_size = pagination
-    result = await note_service.list_notes(user_id, page, page_size, category_id, keyword)
+    result = await note_service.list_notes(
+        user_id, page, page_size, category_id, keyword, tag_id
+    )
     return success(result)
 
 

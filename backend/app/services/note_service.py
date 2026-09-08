@@ -4,7 +4,7 @@ from typing import Optional
 
 from sqlalchemy import func, select
 
-from app.core.cache import cache_invalidate_pattern
+from app.core.cache import cache_get, cache_invalidate_pattern, cache_set
 from app.core.exceptions import ForbiddenException, NotFoundException
 from app.database.mongodb import get_note_contents
 from app.database.mysql import get_session_factory
@@ -99,12 +99,30 @@ async def list_notes(
     page_size: int,
     category_id: Optional[int] = None,
     keyword: Optional[str] = None,
+    tag_id: Optional[int] = None,
 ) -> dict:
+    # 无筛选参数时走 Redis 读缓存（§4.3 / §6.3.1），带筛选参数直接查库避免键复杂度
+    cache_key = None
+    if category_id is None and tag_id is None and not keyword:
+        cache_key = f"cache:notes:list:{user_id}:{page}:{page_size}"
+        try:
+            cached = await cache_get(cache_key)
+        except Exception:
+            cached = None  # Redis 不可用时降级直查数据库
+        if cached is not None:
+            return cached
+
     factory = get_session_factory()
     async with factory() as session:
         stmt = select(Note).where(Note.user_id == user_id, Note.status == 1)
         if category_id is not None:
             stmt = stmt.where(Note.category_id == category_id)
+        if tag_id is not None:
+            stmt = stmt.where(
+                Note.id.in_(
+                    select(note_tags.c.note_id).where(note_tags.c.tag_id == tag_id)
+                )
+            )
         if keyword:
             stmt = stmt.where(Note.title.like(f"%{keyword}%"))
 
@@ -126,13 +144,19 @@ async def list_notes(
             }
             for n in notes
         ]
-        return {
+        payload = {
             "items": items,
             "total": total,
             "page": page,
             "page_size": page_size,
             "total_pages": (total + page_size - 1) // page_size,
         }
+        if cache_key:
+            try:
+                await cache_set(cache_key, payload, ttl=300)  # 5 分钟（§4.3）
+            except Exception:
+                pass  # Redis 不可用时跳过写缓存
+        return payload
 
 
 async def search_notes(user_id: int, keyword: str, page: int, page_size: int) -> dict:
@@ -160,6 +184,8 @@ async def search_notes(user_id: int, keyword: str, page: int, page_size: int) ->
     factory = get_session_factory()
     async with factory() as session:
         stmt = select(Note).where(Note.id.in_(note_ids), Note.status == 1)
+        # total 以 MySQL 有效笔记数为准（含软删除过滤），避免 Mongo 命中数与返回数不一致
+        total = (await session.execute(select(func.count()).select_from(stmt.subquery()))).scalar_one()
         result = await session.execute(
             stmt.order_by(Note.updated_at.desc())
             .offset((page - 1) * page_size)
@@ -179,10 +205,10 @@ async def search_notes(user_id: int, keyword: str, page: int, page_size: int) ->
         ]
         return {
             "items": items,
-            "total": len(note_ids),
+            "total": total,
             "page": page,
             "page_size": page_size,
-            "total_pages": (len(note_ids) + page_size - 1) // page_size,
+            "total_pages": (total + page_size - 1) // page_size,
         }
 
 
