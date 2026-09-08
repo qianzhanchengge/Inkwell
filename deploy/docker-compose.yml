@@ -57,6 +57,10 @@ services:
         condition: service_started
     environment:
       MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
+      MYSQL_USER: workbench
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_DATABASE: workbench
       MONGODB_URL: mongodb://admin:${MONGO_PASSWORD}@mongodb:27017/workbench?authSource=admin
       REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
       SECRET_KEY: ${SECRET_KEY}
