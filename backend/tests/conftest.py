@@ -7,7 +7,7 @@ from app.main import app
 from app.api import deps as api_deps
 from app.core import middleware as core_middleware
 from app.services import auth_service, user_service
-from tests.fakes import FakeRedis, FakeSessionFactory
+from tests.fakes import FakeMongo, FakeRedis, FakeSessionFactory
 
 
 @pytest_asyncio.fixture
@@ -25,6 +25,11 @@ def fake_redis():
 @pytest.fixture
 def fake_db():
     return FakeSessionFactory()
+
+
+@pytest.fixture
+def fake_mongo():
+    return FakeMongo()
 
 
 @pytest.fixture

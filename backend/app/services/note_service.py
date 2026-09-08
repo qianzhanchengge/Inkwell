@@ -8,6 +8,7 @@ from app.core.cache import cache_invalidate_pattern
 from app.core.exceptions import ForbiddenException, NotFoundException
 from app.database.mongodb import get_note_contents
 from app.database.mysql import get_session_factory
+from app.models.category import Category
 from app.models.note import Note, note_tags
 from app.schemas.note import NoteCreate, NoteUpdate
 from app.services.tag_service import get_or_create_tags
@@ -22,12 +23,18 @@ async def _build_note_detail(session, note: Note) -> dict:
     word_count = content_doc["word_count"] if content_doc else 0
 
     tags = [{"id": t.id, "name": t.name} for t in (note.tags or [])]
+    category = None
+    if note.category_id:
+        cat_result = await session.execute(select(Category).where(Category.id == note.category_id))
+        cat = cat_result.scalar_one_or_none()
+        if cat is not None:
+            category = {"id": cat.id, "name": cat.name}
     return {
         "id": note.id,
         "title": note.title,
         "content": content,
         "content_html": content_html,
-        "category": {"id": note.category_id} if note.category_id else None,
+        "category": category,
         "tags": tags,
         "is_pinned": bool(note.is_pinned),
         "word_count": word_count,
@@ -194,7 +201,9 @@ async def get_note(user_id: int, note_id: int) -> dict:
 async def update_note(user_id: int, note_id: int, data: NoteUpdate) -> dict:
     factory = get_session_factory()
     async with factory() as session:
-        result = await session.execute(select(Note).where(Note.id == note_id, Note.user_id == user_id))
+        result = await session.execute(
+            select(Note).where(Note.id == note_id, Note.user_id == user_id, Note.status == 1)
+        )
         note = result.scalar_one_or_none()
         if note is None:
             raise NotFoundException("笔记不存在")
@@ -216,18 +225,16 @@ async def update_note(user_id: int, note_id: int, data: NoteUpdate) -> dict:
                         "content_html": markdown_to_html(data.content),
                         "word_count": count_words(data.content),
                         "updated_at": datetime.now(timezone.utc),
-                    }
+                    },
+                    "$inc": {"version": 1},
                 },
             )
 
         if data.tags is not None:
-            async with session.begin():
-                await session.execute(note_tags.delete().where(note_tags.c.note_id == note.id))
-                tag_ids = await get_or_create_tags(session, user_id, data.tags)
-                for tag_id in tag_ids:
-                    await session.execute(
-                        note_tags.insert().values(note_id=note.id, tag_id=tag_id)
-                    )
+            await session.execute(note_tags.delete().where(note_tags.c.note_id == note.id))
+            tag_ids = await get_or_create_tags(session, user_id, data.tags)
+            for tag_id in tag_ids:
+                await session.execute(note_tags.insert().values(note_id=note.id, tag_id=tag_id))
 
         await session.commit()
         await session.refresh(note)

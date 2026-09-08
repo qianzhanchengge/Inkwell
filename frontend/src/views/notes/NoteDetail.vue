@@ -17,7 +17,9 @@
         <div v-if="note.tags?.length" class="note-detail__tags">
           <el-tag v-for="tag in note.tags" :key="tag.id" size="small">{{ tag.name }}</el-tag>
         </div>
-        <div class="note-detail__content" v-html="note.content_html || note.content"></div>
+        <div class="note-detail__content">
+          <MarkdownPreview :content="note.content" />
+        </div>
       </template>
     </el-card>
   </div>
@@ -27,6 +29,7 @@
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import PageHeader from '@/components/PageHeader.vue'
+import MarkdownPreview from '@/components/MarkdownPreview.vue'
 import { getNote } from '@/api/note'
 import type { Note } from '@/types/note'
 import { formatDateTime } from '@/utils/format'

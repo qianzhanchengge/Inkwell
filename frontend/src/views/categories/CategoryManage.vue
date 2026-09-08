@@ -9,35 +9,57 @@
       </el-tabs>
 
       <div class="category-manage__toolbar">
-        <el-input v-model="name" placeholder="新分类名称" style="width: 240px" />
-        <el-button type="primary" @click="onCreate">新增分类</el-button>
+        <el-button type="primary" @click="openCreate">新增分类</el-button>
       </div>
 
       <el-table :data="categories" v-loading="loading" style="width: 100%">
         <el-table-column prop="id" label="ID" width="80" />
         <el-table-column prop="name" label="名称" min-width="200" />
         <el-table-column prop="sort_order" label="排序" width="100" />
-        <el-table-column label="操作" width="120">
+        <el-table-column label="操作" width="160" fixed="right">
           <template #default="{ row }">
+            <el-button link type="primary" @click="openEdit(row)">编辑</el-button>
             <el-button link type="danger" @click="onDelete(row.id)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
     </el-card>
+
+    <el-dialog
+      v-model="dialogVisible"
+      :title="editingId != null ? '编辑分类' : '新增分类'"
+      width="420px"
+    >
+      <el-form :model="form" label-width="80px">
+        <el-form-item label="名称">
+          <el-input v-model="form.name" placeholder="分类名称" />
+        </el-form-item>
+        <el-form-item label="排序">
+          <el-input-number v-model="form.sort_order" :min="0" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="dialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="saving" @click="onSubmit">保存</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import PageHeader from '@/components/PageHeader.vue'
-import { getCategoryList, createCategory, deleteCategory } from '@/api/category'
+import { getCategoryList, createCategory, updateCategory, deleteCategory } from '@/api/category'
 import type { Category } from '@/types/api'
 
 const loading = ref(false)
+const saving = ref(false)
 const type = ref<1 | 2>(1)
-const name = ref('')
 const categories = ref<Category[]>([])
+const dialogVisible = ref(false)
+const editingId = ref<number | null>(null)
+const form = reactive({ name: '', sort_order: 0 })
 
 async function load() {
   loading.value = true
@@ -50,15 +72,40 @@ async function load() {
   }
 }
 
-async function onCreate() {
-  if (!name.value.trim()) {
+function openCreate() {
+  editingId.value = null
+  form.name = ''
+  form.sort_order = 0
+  dialogVisible.value = true
+}
+
+function openEdit(row: Category) {
+  editingId.value = row.id
+  form.name = row.name
+  form.sort_order = row.sort_order ?? 0
+  dialogVisible.value = true
+}
+
+async function onSubmit() {
+  if (!form.name.trim()) {
     ElMessage.warning('请输入分类名称')
     return
   }
-  await createCategory({ name: name.value.trim(), type: type.value })
-  ElMessage.success('创建成功')
-  name.value = ''
-  load()
+  saving.value = true
+  try {
+    if (editingId.value != null) {
+      await updateCategory(editingId.value, { name: form.name.trim(), sort_order: form.sort_order })
+    } else {
+      await createCategory({ name: form.name.trim(), type: type.value, sort_order: form.sort_order })
+    }
+    ElMessage.success('保存成功')
+    dialogVisible.value = false
+    load()
+  } catch (e) {
+    // 错误提示已统一处理
+  } finally {
+    saving.value = false
+  }
 }
 
 async function onDelete(id: number) {
