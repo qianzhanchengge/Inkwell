@@ -23,7 +23,15 @@
         </el-form-item>
         <el-form-item>
           <el-button type="primary" :loading="saving" @click="onSave">保存</el-button>
+          <el-button @click="triggerFileInput">📄 导入本地 MD 文件</el-button>
           <el-button @click="goBack">取消</el-button>
+          <input
+            ref="fileInput"
+            type="file"
+            accept=".md,.markdown,.txt,text/markdown"
+            style="display: none"
+            @change="onImportFile"
+          />
         </el-form-item>
       </el-form>
     </el-card>
@@ -56,6 +64,42 @@ const form = reactive({
 })
 
 const isEdit = computed(() => !!route.params.id && route.path.includes('/edit'))
+
+const fileInput = ref<HTMLInputElement | null>(null)
+
+function triggerFileInput() {
+  fileInput.value?.click()
+}
+
+/** 从 Markdown 内容提取首个一级标题作为笔记标题 */
+function extractTitleFromMd(md: string): string {
+  const m = md.match(/^#\s+(.+)$/m)
+  return m ? m[1].trim() : ''
+}
+
+/** 导入本地 .md 文件：内容填入编辑器，标题为空时自动取首个 # 标题 */
+async function onImportFile(e: Event) {
+  const input = e.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (!file) return
+  if (file.size > 2 * 1024 * 1024) {
+    ElMessage.warning('文件过大（最大 2MB）')
+    input.value = ''
+    return
+  }
+  const text = await file.text()
+  if (!text.trim()) {
+    ElMessage.warning('文件内容为空')
+    input.value = ''
+    return
+  }
+  form.content = text
+  if (!form.title) {
+    form.title = extractTitleFromMd(text)
+  }
+  ElMessage.success(`已导入「${file.name}」`)
+  input.value = ''
+}
 
 async function loadMeta() {
   categories.value = await getCategoryList(1)
