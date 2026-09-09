@@ -32,6 +32,15 @@ async def list_my_articles(
     return success(result)
 
 
+@router.get("/favorites")
+async def list_favorites(
+    pagination=Depends(get_pagination),
+    user_id: int = Depends(get_current_user_id),
+):
+    page, page_size = pagination
+    return success(await article_service.list_favorites(user_id, page, page_size))
+
+
 @router.get("/search")
 async def search_articles(
     keyword: str = Query(..., min_length=1),
@@ -79,10 +88,30 @@ async def unpublish_article(article_id: int, user_id: int = Depends(get_current_
 
 
 @router.post("/{article_id}/like")
-async def like_article(
-    article_id: int,
-    like: bool = Query(True),
-    user_id: int = Depends(get_current_user_id),
+async def toggle_like(article_id: int, user_id: int = Depends(get_current_user_id)):
+    return success(await article_service.toggle_like(user_id, article_id))
+
+
+@router.get("/{article_id}/like")
+async def get_like_status(
+    article_id: int, user_id: int = Depends(get_optional_user_id)
 ):
-    count = await article_service.like_article(user_id, article_id, like)
-    return success({"like_count": count})
+    if user_id is None:
+        return success({"liked": False})
+    return success({"liked": await article_service.get_like_status(user_id, article_id)})
+
+
+@router.post("/{article_id}/favorite")
+async def toggle_favorite(
+    article_id: int, user_id: int = Depends(get_current_user_id)
+):
+    return success(await article_service.toggle_favorite(user_id, article_id))
+
+
+@router.post("/{article_id}/share")
+async def share_article(
+    article_id: int,
+    platform: str = Query("link"),
+    user_id: int = Depends(get_optional_user_id),
+):
+    return success(await article_service.record_share(user_id, article_id, platform))

@@ -16,8 +16,12 @@ from sqlalchemy.sql.elements import BinaryExpression, BooleanClauseList
 
 from app.database.mysql import Base
 from app.models.article import Article, article_tags
+from app.models.article_like import ArticleLike
 from app.models.category import Category
+from app.models.comment import Comment, CommentLike
+from app.models.favorite import ArticleFavorite
 from app.models.note import Note, note_tags
+from app.models.share import ArticleShare
 from app.models.tag import Tag
 from app.models.user import User
 
@@ -27,6 +31,11 @@ _MODEL_BY_TABLE = {
     "articles": Article,
     "categories": Category,
     "tags": Tag,
+    "comments": Comment,
+    "article_likes": ArticleLike,
+    "article_favorites": ArticleFavorite,
+    "article_shares": ArticleShare,
+    "comment_likes": CommentLike,
 }
 
 
@@ -105,14 +114,21 @@ def _resolve_in_subquery(factory, stmt) -> list:
     for w in stmt._where_criteria:
         if isinstance(w, BinaryExpression):
             key = getattr(w.left, "key", None) or getattr(w.left, "name", None)
-            if key in ("note_id", "tag_id", "article_id") and getattr(w.operator, "__name__", "") == "eq":
-                cond[key] = _right_value(w.right)
+            op = getattr(w.operator, "__name__", "")
+            if key in ("note_id", "tag_id", "article_id"):
+                if op == "eq":
+                    cond[key] = _right_value(w.right)
+                elif op == "in_op":
+                    cond[key] = list(_right_value(w.right) or [])
     cols = [getattr(c, "key", None) for c in stmt.selected_columns]
     out = []
     for pair in rel:
         a, b = pair
         row = {"note_id": a, "article_id": a, "tag_id": b}
-        if all(row.get(k) == v for k, v in cond.items()):
+        if all(
+            (row.get(k) in v) if isinstance(v, list) else (row.get(k) == v)
+            for k, v in cond.items()
+        ):
             for c in cols:
                 if c in row:
                     out.append(row[c])
@@ -322,6 +338,11 @@ class _FakeSession:
         elif isinstance(obj, Category):
             if getattr(obj, "sort_order", None) is None:
                 obj.sort_order = 0
+        elif isinstance(obj, Comment):
+            if getattr(obj, "status", None) is None:
+                obj.status = 1
+            if getattr(obj, "like_count", None) is None:
+                obj.like_count = 0
 
     def _hydrate(self, obj):
         """把关系字段（如 note.tags / article.tags）从多对多关系集合填充为普通列表。"""

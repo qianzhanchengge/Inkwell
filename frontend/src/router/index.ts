@@ -34,16 +34,27 @@ const routes: RouteRecordRaw[] = [
     ]
   },
   {
+    path: '/blog',
+    component: () => import('@/views/blog/BlogLayout.vue'),
+    meta: { public: true },
+    children: [
+      { path: '', name: 'blog-home', component: () => import('@/views/blog/BlogHome.vue'), meta: { public: true, title: '博客' } },
+      { path: 'articles/:id', name: 'blog-article', component: () => import('@/views/blog/BlogArticleDetail.vue'), meta: { public: true, title: '文章详情' } },
+      { path: 'categories', name: 'blog-categories', component: () => import('@/views/blog/BlogCategory.vue'), meta: { public: true, title: '分类' } },
+      { path: 'categories/:id', name: 'blog-category', component: () => import('@/views/blog/BlogCategory.vue'), meta: { public: true, title: '分类' } },
+      { path: 'tags', name: 'blog-tags', component: () => import('@/views/blog/BlogTag.vue'), meta: { public: true, title: '标签' } },
+      { path: 'tags/:tag', name: 'blog-tag', component: () => import('@/views/blog/BlogTag.vue'), meta: { public: true, title: '标签' } },
+      { path: 'search', name: 'blog-search', component: () => import('@/views/blog/BlogSearch.vue'), meta: { public: true, title: '搜索' } },
+      { path: 'archive', name: 'blog-archive', component: () => import('@/views/blog/BlogArchive.vue'), meta: { public: true, title: '归档' } }
+    ]
+  },
+  {
     path: '/p/articles',
-    name: 'public-articles',
-    component: () => import('@/views/articles/ArticlePublic.vue'),
-    meta: { public: true, title: '文章广场' }
+    redirect: '/blog'
   },
   {
     path: '/p/articles/:id',
-    name: 'public-article-detail',
-    component: () => import('@/views/articles/ArticleDetail.vue'),
-    meta: { public: true, title: '文章详情' }
+    redirect: (to) => `/blog/articles/${String(to.params.id)}`
   },
   {
     path: '/:pathMatch(.*)*',

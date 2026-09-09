@@ -10,7 +10,11 @@ from app.database.mongodb import get_article_contents
 from app.database.mysql import get_session_factory
 from app.database.redis import get_redis
 from app.models.article import Article, article_tags
+from app.models.article_like import ArticleLike
 from app.models.category import Category
+from app.models.comment import Comment
+from app.models.favorite import ArticleFavorite
+from app.models.share import ArticleShare
 from app.schemas.article import ArticleCreate, ArticleUpdate
 from app.services.tag_service import get_or_create_tags
 from app.utils.markdown import count_words, estimate_reading_time, markdown_to_html
@@ -229,6 +233,47 @@ async def get_article(article_id: int, user_id: Optional[int] = None) -> dict:
             except Exception:
                 # Redis 不可用时降级：仅返回 MySQL 中的累计值
                 pass
+
+        # 互动数据聚合（§5.1-5.4）：评论数、分享数、当前用户点赞/收藏状态
+        detail["comment_count"] = (
+            await session.execute(
+                select(func.count()).select_from(
+                    select(Comment)
+                    .where(Comment.article_id == article_id, Comment.status == 1)
+                    .subquery()
+                )
+            )
+        ).scalar_one()
+        detail["share_count"] = (
+            await session.execute(
+                select(func.count()).select_from(
+                    select(ArticleShare)
+                    .where(ArticleShare.article_id == article_id)
+                    .subquery()
+                )
+            )
+        ).scalar_one()
+        detail["is_liked"] = False
+        detail["is_favorited"] = False
+        if user_id is not None:
+            liked = (
+                await session.execute(
+                    select(ArticleLike).where(
+                        ArticleLike.article_id == article_id,
+                        ArticleLike.user_id == user_id,
+                    )
+                )
+            ).scalar_one_or_none()
+            favorited = (
+                await session.execute(
+                    select(ArticleFavorite).where(
+                        ArticleFavorite.article_id == article_id,
+                        ArticleFavorite.user_id == user_id,
+                    )
+                )
+            ).scalar_one_or_none()
+            detail["is_liked"] = liked is not None
+            detail["is_favorited"] = favorited is not None
         return detail
 
 
@@ -344,20 +389,163 @@ async def unpublish_article(user_id: int, article_id: int) -> dict:
         return await _build_article_detail(session, article)
 
 
-async def like_article(user_id: int, article_id: int, like: bool = True) -> int:
+async def toggle_like(user_id: int, article_id: int) -> dict:
+    """点赞/取消点赞（一人一赞去重，§5.2）。"""
     factory = get_session_factory()
     async with factory() as session:
-        result = await session.execute(select(Article).where(Article.id == article_id))
-        article = result.scalar_one_or_none()
+        article = (
+            await session.execute(select(Article).where(Article.id == article_id))
+        ).scalar_one_or_none()
         if article is None:
             raise NotFoundException("文章不存在")
         if article.status != 1:
             raise APIException(400, "仅已发布文章可点赞")
 
-        if like:
-            article.like_count = (article.like_count or 0) + 1
-        else:
+        existing = (
+            await session.execute(
+                select(ArticleLike).where(
+                    ArticleLike.article_id == article_id,
+                    ArticleLike.user_id == user_id,
+                )
+            )
+        ).scalar_one_or_none()
+
+        if existing is not None:
+            await session.delete(existing)
             article.like_count = max(0, (article.like_count or 0) - 1)
+            liked = False
+        else:
+            session.add(ArticleLike(article_id=article_id, user_id=user_id))
+            article.like_count = (article.like_count or 0) + 1
+            liked = True
+
         await session.commit()
         await cache_invalidate_pattern("cache:articles:*")
-        return article.like_count
+        return {"liked": liked, "like_count": article.like_count}
+
+
+async def get_like_status(user_id: int, article_id: int) -> bool:
+    factory = get_session_factory()
+    async with factory() as session:
+        existing = (
+            await session.execute(
+                select(ArticleLike).where(
+                    ArticleLike.article_id == article_id,
+                    ArticleLike.user_id == user_id,
+                )
+            )
+        ).scalar_one_or_none()
+        return existing is not None
+
+
+async def toggle_favorite(user_id: int, article_id: int) -> dict:
+    """收藏/取消收藏（§5.3）。"""
+    factory = get_session_factory()
+    async with factory() as session:
+        article = (
+            await session.execute(select(Article).where(Article.id == article_id))
+        ).scalar_one_or_none()
+        if article is None:
+            raise NotFoundException("文章不存在")
+        if article.status != 1:
+            raise APIException(400, "仅已发布文章可收藏")
+
+        existing = (
+            await session.execute(
+                select(ArticleFavorite).where(
+                    ArticleFavorite.article_id == article_id,
+                    ArticleFavorite.user_id == user_id,
+                )
+            )
+        ).scalar_one_or_none()
+
+        if existing is not None:
+            await session.delete(existing)
+            favorited = False
+        else:
+            session.add(ArticleFavorite(article_id=article_id, user_id=user_id))
+            favorited = True
+
+        await session.commit()
+        return {"favorited": favorited}
+
+
+async def list_favorites(user_id: int, page: int, page_size: int) -> dict:
+    """我的收藏列表（§5.3）。"""
+    factory = get_session_factory()
+    async with factory() as session:
+        favs = (
+            await session.execute(
+                select(ArticleFavorite).where(ArticleFavorite.user_id == user_id)
+            )
+        ).scalars().all()
+        article_ids = [f.article_id for f in favs]
+        if not article_ids:
+            return {
+                "items": [],
+                "total": 0,
+                "page": page,
+                "page_size": page_size,
+                "total_pages": 0,
+            }
+
+        stmt = select(Article).where(Article.id.in_(article_ids), Article.status == 1)
+        total = (
+            await session.execute(select(func.count()).select_from(stmt.subquery()))
+        ).scalar_one()
+        result = await session.execute(
+            stmt.order_by(Article.published_at.desc())
+            .offset((page - 1) * page_size)
+            .limit(page_size)
+        )
+        items = [
+            {
+                "id": a.id,
+                "title": a.title,
+                "summary": a.summary,
+                "cover_image": a.cover_image,
+                "category_id": a.category_id,
+                "view_count": a.view_count,
+                "like_count": a.like_count,
+                "status": a.status,
+                "published_at": a.published_at,
+                "created_at": a.created_at,
+            }
+            for a in result.scalars().all()
+        ]
+        return {
+            "items": items,
+            "total": total,
+            "page": page,
+            "page_size": page_size,
+            "total_pages": (total + page_size - 1) // page_size,
+        }
+
+
+async def record_share(
+    user_id: Optional[int], article_id: int, platform: str = "link"
+) -> dict:
+    """记录一次分享（复制链接，§5.4），返回文章 URL。"""
+    factory = get_session_factory()
+    async with factory() as session:
+        article = (
+            await session.execute(select(Article).where(Article.id == article_id))
+        ).scalar_one_or_none()
+        if article is None:
+            raise NotFoundException("文章不存在")
+        if article.status != 1:
+            raise APIException(400, "仅已发布文章可分享")
+
+        session.add(
+            ArticleShare(
+                article_id=article_id,
+                user_id=user_id,
+                platform=platform or "link",
+            )
+        )
+        await session.commit()
+    return {
+        "shared": True,
+        "article_id": article_id,
+        "url": f"/blog/articles/{article_id}",
+    }

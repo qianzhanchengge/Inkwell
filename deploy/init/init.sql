@@ -96,3 +96,60 @@ CREATE TABLE IF NOT EXISTS article_tags (
     FOREIGN KEY (article_id) REFERENCES articles(id),
     FOREIGN KEY (tag_id) REFERENCES tags(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS comments (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    article_id BIGINT NOT NULL,
+    user_id BIGINT NOT NULL,
+    parent_id BIGINT NULL,
+    reply_to_user_id BIGINT NULL,
+    content TEXT NOT NULL,
+    like_count INT DEFAULT 0,
+    status TINYINT DEFAULT 1,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_article (article_id),
+    INDEX idx_user (user_id),
+    INDEX idx_parent (parent_id),
+    FOREIGN KEY (article_id) REFERENCES articles(id),
+    FOREIGN KEY (user_id) REFERENCES users(id),
+    FOREIGN KEY (parent_id) REFERENCES comments(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS article_likes (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    article_id BIGINT NOT NULL,
+    user_id BIGINT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uk_article_user (article_id, user_id),
+    INDEX idx_article (article_id),
+    INDEX idx_user (user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS article_favorites (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    article_id BIGINT NOT NULL,
+    user_id BIGINT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uk_favorite_user (article_id, user_id),
+    INDEX idx_user (user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS article_shares (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    article_id BIGINT NOT NULL,
+    user_id BIGINT NULL,
+    platform VARCHAR(20) DEFAULT 'link',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_article (article_id),
+    INDEX idx_user (user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS comment_likes (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    comment_id BIGINT NOT NULL,
+    user_id BIGINT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uk_comment_user (comment_id, user_id),
+    INDEX idx_user (user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

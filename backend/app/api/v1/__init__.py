@@ -4,7 +4,9 @@ from fastapi import APIRouter
 from app.api.v1 import (
     articles,
     auth,
+    blog,
     categories,
+    comments,
     notes,
     stats,
     tags,
@@ -21,3 +23,5 @@ api_router.include_router(categories.router)
 api_router.include_router(tags.router)
 api_router.include_router(stats.router)
 api_router.include_router(upload.router)
+api_router.include_router(comments.router)
+api_router.include_router(blog.router)

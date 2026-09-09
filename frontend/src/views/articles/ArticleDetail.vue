@@ -31,7 +31,7 @@ import { useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import PageHeader from '@/components/PageHeader.vue'
 import MarkdownPreview from '@/components/MarkdownPreview.vue'
-import { getArticle, toggleArticleLike, unlikeArticle } from '@/api/article'
+import { getArticle, toggleArticleLike } from '@/api/article'
 import type { Article } from '@/types/article'
 import { formatDateTime } from '@/utils/format'
 
@@ -47,6 +47,7 @@ async function load() {
   loading.value = true
   try {
     article.value = await getArticle(route.params.id as string)
+    liked.value = article.value?.is_liked ?? false
   } catch (e) {
     // 错误提示已统一处理
   } finally {
@@ -58,14 +59,10 @@ async function onLike() {
   if (!article.value) return
   liking.value = true
   try {
-    if (liked.value) {
-      const res = await unlikeArticle(article.value.id)
-      article.value.like_count = res.like_count
-    } else {
-      const res = await toggleArticleLike(article.value.id)
-      article.value.like_count = res.like_count
-    }
-    liked.value = !liked.value
+    const res = await toggleArticleLike(article.value.id)
+    article.value.like_count = res.like_count
+    article.value.is_liked = res.liked
+    liked.value = res.liked
   } catch (e) {
     // 错误提示已统一处理
   } finally {
