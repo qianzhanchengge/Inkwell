@@ -1,6 +1,6 @@
 <template>
   <div class="category-manage">
-    <PageHeader title="分类管理" />
+    <PageHeader title="分类管理" show-back />
 
     <el-card>
       <el-tabs v-model="type" @tab-change="load">

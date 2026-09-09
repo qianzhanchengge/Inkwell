@@ -1,6 +1,6 @@
 <template>
   <div class="profile">
-    <PageHeader title="个人设置" />
+    <PageHeader title="个人设置" show-back />
 
     <el-card class="profile__section">
       <template #header>基本信息</template>

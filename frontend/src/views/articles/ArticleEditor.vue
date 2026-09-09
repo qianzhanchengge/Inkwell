@@ -1,6 +1,6 @@
 <template>
   <div class="article-editor">
-    <PageHeader :title="isEdit ? '编辑文章' : '新建文章'" />
+    <PageHeader :title="isEdit ? '编辑文章' : '新建文章'" show-back back-to="/articles" />
 
     <el-card>
       <el-form :model="form" label-width="80px">

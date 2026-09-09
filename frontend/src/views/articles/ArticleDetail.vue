@@ -1,5 +1,6 @@
 <template>
   <div class="article-detail">
+    <PageHeader title="文章详情" show-back :back-to="backTo" />
     <el-card v-loading="loading">
       <template v-if="article">
         <h1 class="article-detail__title">{{ article.title }}</h1>
@@ -25,9 +26,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import PageHeader from '@/components/PageHeader.vue'
 import MarkdownPreview from '@/components/MarkdownPreview.vue'
 import { getArticle, toggleArticleLike, unlikeArticle } from '@/api/article'
 import type { Article } from '@/types/article'
@@ -38,6 +40,8 @@ const loading = ref(false)
 const liking = ref(false)
 const liked = ref(false)
 const article = ref<Article | null>(null)
+// 公开浏览与个人管理共用本页：返回目标跟随路由前缀
+const backTo = computed(() => (route.path.startsWith('/p/') ? '/p/articles' : '/articles'))
 
 async function load() {
   loading.value = true

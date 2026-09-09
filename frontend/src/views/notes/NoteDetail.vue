@@ -1,6 +1,6 @@
 <template>
   <div class="note-detail">
-    <PageHeader title="笔记详情">
+    <PageHeader title="笔记详情" show-back back-to="/notes">
       <template #extra>
         <el-button @click="goEdit">编辑</el-button>
       </template>

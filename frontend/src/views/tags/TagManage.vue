@@ -1,6 +1,6 @@
 <template>
   <div class="tag-manage">
-    <PageHeader title="标签管理" />
+    <PageHeader title="标签管理" show-back />
 
     <el-card>
       <div class="tag-manage__toolbar">

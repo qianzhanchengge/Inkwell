@@ -1,6 +1,6 @@
 <template>
   <div class="note-editor">
-    <PageHeader :title="isEdit ? '编辑笔记' : '新建笔记'" />
+    <PageHeader :title="isEdit ? '编辑笔记' : '新建笔记'" show-back back-to="/notes" />
 
     <el-card>
       <el-form :model="form" label-width="80px">
