@@ -8,7 +8,6 @@
           <router-link to="/blog/categories">分类</router-link>
           <router-link to="/blog/tags">标签</router-link>
           <router-link to="/blog/archive">归档</router-link>
-          <router-link to="/blog/search">搜索</router-link>
         </nav>
         <div class="blog-layout__right">
           <template v-if="blogUserStore.token">

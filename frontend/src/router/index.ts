@@ -44,7 +44,6 @@ const routes: RouteRecordRaw[] = [
       { path: 'categories/:id', name: 'blog-category', component: () => import('@/views/blog/BlogCategory.vue'), meta: { public: true, title: '分类' } },
       { path: 'tags', name: 'blog-tags', component: () => import('@/views/blog/BlogTag.vue'), meta: { public: true, title: '标签' } },
       { path: 'tags/:tag', name: 'blog-tag', component: () => import('@/views/blog/BlogTag.vue'), meta: { public: true, title: '标签' } },
-      { path: 'search', name: 'blog-search', component: () => import('@/views/blog/BlogSearch.vue'), meta: { public: true, title: '搜索' } },
       { path: 'archive', name: 'blog-archive', component: () => import('@/views/blog/BlogArchive.vue'), meta: { public: true, title: '归档' } }
     ]
   },

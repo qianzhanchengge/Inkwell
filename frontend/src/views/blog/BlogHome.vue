@@ -6,6 +6,24 @@
           <el-radio-button value="latest">最新</el-radio-button>
           <el-radio-button value="hot">热门</el-radio-button>
         </el-radio-group>
+        <div class="blog-home__search">
+          <el-input
+            v-model="keyword"
+            placeholder="搜索文章"
+            clearable
+            @keyup.enter="onSearch"
+            @clear="onClearSearch"
+          >
+            <template #append>
+              <el-button :loading="loading" @click="onSearch">搜索</el-button>
+            </template>
+          </el-input>
+        </div>
+      </div>
+
+      <div v-if="searching" class="blog-home__search-tip">
+        <span>「{{ keyword }}」的搜索结果（共 {{ total }} 条）</span>
+        <el-button text type="primary" @click="onClearSearch">返回全部文章</el-button>
       </div>
 
       <div v-loading="loading">
@@ -54,13 +72,16 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 import ArticleCard from '@/components/ArticleCard.vue'
 import Pagination from '@/components/Pagination.vue'
 import TagCloud from '@/components/TagCloud.vue'
 import { getBlogFeed, getBlogCategories, getBlogTags, getBlogHot } from '@/api/blog'
+import { searchBlogArticles } from '@/api/blogArticle'
 import type { Article } from '@/types/article'
 import type { CategoryStat, TagStat, HotArticle } from '@/types/blog'
 
+const route = useRoute()
 const loading = ref(false)
 const sort = ref<'latest' | 'hot'>('latest')
 const articles = ref<Article[]>([])
@@ -70,6 +91,8 @@ const hot = ref<HotArticle[]>([])
 const page = ref(1)
 const pageSize = ref(10)
 const total = ref(0)
+const keyword = ref('')
+const searching = ref(false)
 
 async function loadFeed() {
   loading.value = true
@@ -94,23 +117,59 @@ async function loadSidebar() {
   }
 }
 
-function onSortChange() {
+async function doSearch() {
+  const kw = keyword.value.trim()
+  if (!kw) {
+    onClearSearch()
+    return
+  }
+  searching.value = true
+  loading.value = true
+  try {
+    const data = await searchBlogArticles(kw, { page: page.value, page_size: pageSize.value })
+    articles.value = data.items
+    total.value = data.total
+  } catch {
+    // 错误提示已统一处理
+  } finally {
+    loading.value = false
+  }
+}
+
+function onSearch() {
+  page.value = 1
+  doSearch()
+}
+
+function onClearSearch() {
+  keyword.value = ''
+  searching.value = false
   page.value = 1
   loadFeed()
 }
+
+function onSortChange() {
+  page.value = 1
+  searching.value ? doSearch() : loadFeed()
+}
 function onPageChange(v: number) {
   page.value = v
-  loadFeed()
+  searching.value ? doSearch() : loadFeed()
 }
 function onSizeChange(v: number) {
   pageSize.value = v
   page.value = 1
-  loadFeed()
+  searching.value ? doSearch() : loadFeed()
 }
 
 onMounted(() => {
   loadFeed()
   loadSidebar()
+  const q = route.query.q
+  if (q) {
+    keyword.value = String(q)
+    doSearch()
+  }
 })
 </script>
 
@@ -127,7 +186,25 @@ onMounted(() => {
   min-width: 0;
 }
 .blog-home__toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
   margin-bottom: 16px;
+}
+.blog-home__search {
+  width: 280px;
+}
+.blog-home__search-tip {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 10px 14px;
+  background: #f5f7fa;
+  border-radius: 6px;
+  color: #606266;
+  font-size: 14px;
 }
 .blog-home__side {
   width: 280px;
