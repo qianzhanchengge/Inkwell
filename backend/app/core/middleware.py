@@ -12,6 +12,8 @@ from app.utils.logger import logger
 # 注意：路径包含 /api/v1 前缀（app.include_router 时拼上 settings.API_V1_PREFIX）
 RATE_LIMIT_RULES = {
     "/api/v1/auth/login": (60, 5),
+    "/api/v1/blog/auth/login": (60, 5),
+    "/api/v1/blog/auth/register": (60, 10),
 }
 
 

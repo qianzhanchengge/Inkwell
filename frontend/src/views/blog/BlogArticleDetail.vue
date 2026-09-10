@@ -73,17 +73,19 @@ import FavoriteButton from '@/components/FavoriteButton.vue'
 import ShareButton from '@/components/ShareButton.vue'
 import CommentList from '@/components/CommentList.vue'
 import CommentInput from '@/components/CommentInput.vue'
-import { getArticle } from '@/api/article'
+import { getBlogArticle } from '@/api/blogArticle'
 import { getRelatedArticles } from '@/api/blog'
 import { getComments, createComment, deleteComment } from '@/api/comment'
-import { useUserStore } from '@/stores/user'
+import { useBlogUserStore } from '@/stores/blogUser'
+import { useLogin } from '@/composables/useLogin'
 import type { Article } from '@/types/article'
 import type { Comment } from '@/types/comment'
 import type { RelatedArticle } from '@/types/blog'
 import { formatDateTime } from '@/utils/format'
 
 const route = useRoute()
-const userStore = useUserStore()
+const blogUserStore = useBlogUserStore()
+const { ensureLogin } = useLogin()
 
 const loading = ref(false)
 const article = ref<Article | null>(null)
@@ -99,7 +101,7 @@ const articleId = route.params.id as string
 async function loadArticle() {
   loading.value = true
   try {
-    article.value = await getArticle(articleId)
+    article.value = await getBlogArticle(articleId)
     commentCount.value = article.value.comment_count ?? 0
   } catch {
     // 错误提示已统一处理
@@ -127,12 +129,16 @@ async function loadComments() {
 }
 
 async function loadCurrentUser() {
-  if (!userStore.token) return
+  // 只认博客登录态：工作台已登录不代表博客已登录
+  if (!blogUserStore.token) {
+    currentUserId.value = null
+    return
+  }
   try {
-    if (!userStore.userInfo) {
-      await userStore.fetchMe()
+    if (!blogUserStore.userInfo) {
+      await blogUserStore.fetchMe()
     }
-    currentUserId.value = userStore.userInfo?.id ?? null
+    currentUserId.value = blogUserStore.userInfo?.id ?? null
   } catch {
     currentUserId.value = null
   }
@@ -156,6 +162,9 @@ function onReply(comment: Comment) {
 }
 
 async function onSubmitComment(content: string) {
+  // 发表评论需博客登录（工作台已登录也需单独登录博客）
+  const ok = await ensureLogin()
+  if (!ok) return
   submitting.value = true
   try {
     const payload = replyTo.value

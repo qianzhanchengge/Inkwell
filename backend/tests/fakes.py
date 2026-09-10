@@ -319,6 +319,8 @@ class _FakeSession:
                     setattr(obj, f, "")
             if getattr(obj, "status", None) is None:
                 obj.status = 1
+            if getattr(obj, "user_type", None) is None:
+                obj.user_type = 1
         elif isinstance(obj, Note):
             if getattr(obj, "status", None) is None:
                 obj.status = 1

@@ -50,6 +50,16 @@ async def auth(articles_env, client):
     return headers, me.json()["data"]["id"]
 
 
+@pytest_asyncio.fixture
+async def blog_auth(auth, client):
+    """博客会话头（同一用户在博客侧单独登录；点赞/收藏/分享需 blog scope）。"""
+    resp = await client.post(
+        "/api/v1/blog/auth/login",
+        json={"username": "author", "password": "secret123"},
+    )
+    return {"Authorization": f"Bearer {resp.json()['data']['access_token']}"}
+
+
 async def _create(client, headers, body=None):
     return await client.post("/api/v1/articles", headers=headers, json=body or {
         "title": "深入理解 Python 异步编程",
@@ -195,26 +205,28 @@ async def test_public_detail_without_auth(auth, client):
 # --------------------------------------------------------------------------- #
 
 @pytest.mark.asyncio
-async def test_like_and_unlike(auth, client):
+async def test_like_and_unlike(auth, blog_auth, client):
     headers, _ = auth
     created = await _create(client, headers)
     article_id = created.json()["data"]["id"]
     await client.post(f"/api/v1/articles/{article_id}/publish", headers=headers)
 
-    liked = await client.post(f"/api/v1/articles/{article_id}/like", headers=headers)
+    liked = await client.post(f"/api/v1/articles/{article_id}/like", headers=blog_auth)
+    assert liked.json()["data"]["liked"] is True
     assert liked.json()["data"]["like_count"] == 1
 
-    unliked = await client.post(f"/api/v1/articles/{article_id}/like?like=false", headers=headers)
+    unliked = await client.post(f"/api/v1/articles/{article_id}/like", headers=blog_auth)
+    assert unliked.json()["data"]["liked"] is False
     assert unliked.json()["data"]["like_count"] == 0
 
 
 @pytest.mark.asyncio
-async def test_like_draft_rejected(auth, client):
+async def test_like_draft_rejected(auth, blog_auth, client):
     headers, _ = auth
     created = await _create(client, headers)  # 草稿
     article_id = created.json()["data"]["id"]
 
-    resp = await client.post(f"/api/v1/articles/{article_id}/like", headers=headers)
+    resp = await client.post(f"/api/v1/articles/{article_id}/like", headers=blog_auth)
     assert resp.status_code == 400
 
 

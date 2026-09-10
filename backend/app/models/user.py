@@ -22,6 +22,9 @@ class User(Base):
     avatar: Mapped[str] = mapped_column(String(255), default="")
     bio: Mapped[str] = mapped_column(String(500), default="")
     status: Mapped[int] = mapped_column(SmallInteger, default=1)  # 0-禁用 1-正常
+    user_type: Mapped[int] = mapped_column(
+        SmallInteger, default=1, server_default="1"
+    )  # 1-工作台用户 2-博客用户
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime, server_default=func.now(), onupdate=func.now()

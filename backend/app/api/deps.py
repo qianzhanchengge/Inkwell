@@ -1,4 +1,12 @@
-"""依赖注入：认证与分页。"""
+"""依赖注入：认证（工作台 / 博客双 scope）与分页。
+
+Token 作用域：
+- ``workbench``：工作台管理接口（笔记/文章管理、分类、标签、统计、个人设置等）
+- ``blog``：博客前台互动接口（点赞、收藏、分享、评论）
+
+只读个性化字段（如文章详情的 ``is_liked``/``is_favorited``）接受任一 scope。
+旧 Token 无 ``scope`` 载荷时视为 ``workbench``（向后兼容）。
+"""
 from typing import Optional, Tuple
 
 from fastapi import Depends, Query
@@ -6,7 +14,7 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError
 
 from app.core.exceptions import UnauthorizedException
-from app.core.security import decode_token
+from app.core.security import SCOPE_BLOG, SCOPE_WORKBENCH, decode_token, token_scope
 from app.database.redis import get_redis
 from app.utils.logger import logger
 
@@ -40,10 +48,15 @@ def extract_jti(credentials: Optional[HTTPAuthorizationCredentials]) -> str:
     return payload.get("jti", "") if payload else ""
 
 
-async def get_current_user_id(
-    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
-) -> int:
-    """解析 Bearer Token，返回当前用户 ID（必须登录，且 token 有效未拉黑）。"""
+def _user_id_of(payload: dict) -> int:
+    try:
+        return int(payload["sub"])
+    except (KeyError, ValueError, TypeError):
+        raise UnauthorizedException("令牌无效")
+
+
+async def _require(credentials: Optional[HTTPAuthorizationCredentials], scope: str) -> int:
+    """必须登录且 Token scope 匹配，返回用户 ID。"""
     if credentials is None:
         raise UnauthorizedException("未提供认证令牌")
     payload = _decode_payload(credentials.credentials)
@@ -53,16 +66,15 @@ async def get_current_user_id(
         raise UnauthorizedException("令牌类型错误")
     if await _is_blacklisted(payload.get("jti")):
         raise UnauthorizedException("令牌已失效")
-    try:
-        return int(payload["sub"])
-    except (KeyError, ValueError, TypeError):
-        raise UnauthorizedException("令牌无效")
+    if token_scope(payload) != scope:
+        raise UnauthorizedException("令牌作用域不匹配，请重新登录")
+    return _user_id_of(payload)
 
 
-async def get_optional_user_id(
-    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
+async def _optional(
+    credentials: Optional[HTTPAuthorizationCredentials], scopes: Tuple[str, ...]
 ) -> Optional[int]:
-    """可选认证：有有效 Token 返回用户 ID，否则返回 None（公开接口用）。"""
+    """可选认证：Token 有效且 scope 在允许集合内返回用户 ID，否则 None。"""
     if credentials is None:
         return None
     payload = _decode_payload(credentials.credentials)
@@ -70,10 +82,47 @@ async def get_optional_user_id(
         return None
     if await _is_blacklisted(payload.get("jti")):
         return None
+    if token_scope(payload) not in scopes:
+        return None
     try:
         return int(payload["sub"])
     except (KeyError, ValueError, TypeError):
         return None
+
+
+async def get_current_user_id(
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
+) -> int:
+    """工作台身份：必须登录且 scope=workbench。"""
+    return await _require(credentials, SCOPE_WORKBENCH)
+
+
+async def get_blog_user_id(
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
+) -> int:
+    """博客身份：必须登录且 scope=blog。"""
+    return await _require(credentials, SCOPE_BLOG)
+
+
+async def get_optional_user_id(
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
+) -> Optional[int]:
+    """工作台可选身份：仅接受 scope=workbench，否则 None。"""
+    return await _optional(credentials, (SCOPE_WORKBENCH,))
+
+
+async def get_optional_blog_user_id(
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
+) -> Optional[int]:
+    """博客可选身份：仅接受 scope=blog，否则 None（游客）。"""
+    return await _optional(credentials, (SCOPE_BLOG,))
+
+
+async def get_optional_any_user_id(
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
+) -> Optional[int]:
+    """可选身份：接受任一 scope，用于只读个性化字段。"""
+    return await _optional(credentials, (SCOPE_WORKBENCH, SCOPE_BLOG))
 
 
 def get_pagination(

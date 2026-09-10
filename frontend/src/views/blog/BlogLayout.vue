@@ -11,8 +11,16 @@
           <router-link to="/blog/search">搜索</router-link>
         </nav>
         <div class="blog-layout__right">
-          <router-link v-if="!userStore.token" to="/login">登录</router-link>
-          <router-link v-else to="/dashboard">进入工作台</router-link>
+          <template v-if="blogUserStore.token">
+            <span class="blog-layout__user">
+              {{ blogUserStore.userInfo?.nickname || blogUserStore.userInfo?.username || '博客用户' }}
+            </span>
+            <el-button link type="primary" @click="onLogout">退出</el-button>
+          </template>
+          <el-button v-else link type="primary" @click="openLoginDialog">登录</el-button>
+          <router-link v-if="hasWorkbenchToken" to="/dashboard" class="blog-layout__wb">
+            进入工作台
+          </router-link>
         </div>
       </div>
     </header>
@@ -28,9 +36,26 @@
 </template>
 
 <script setup lang="ts">
-import { useUserStore } from '@/stores/user'
+import { computed } from 'vue'
+import { ElMessage } from 'element-plus'
+import { useBlogUserStore } from '@/stores/blogUser'
+import { useLoginDialogStore } from '@/stores/loginDialog'
+import { getToken } from '@/utils/auth'
 
-const userStore = useUserStore()
+const blogUserStore = useBlogUserStore()
+const dialogStore = useLoginDialogStore()
+
+// 工作台登录态仅用于显示「进入工作台」入口，不影响博客是否已登录
+const hasWorkbenchToken = computed(() => !!getToken())
+
+function openLoginDialog() {
+  dialogStore.open().catch(() => {})
+}
+
+function onLogout() {
+  blogUserStore.logout()
+  ElMessage.success('已退出博客账号')
+}
 </script>
 
 <style scoped lang="scss">
@@ -69,7 +94,16 @@ const userStore = useUserStore()
     }
   }
 }
-.blog-layout__right a {
+.blog-layout__right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.blog-layout__user {
+  font-size: 14px;
+  color: #606266;
+}
+.blog-layout__wb {
   font-size: 14px;
   color: #409eff;
 }

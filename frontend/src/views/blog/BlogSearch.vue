@@ -33,7 +33,7 @@ import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import ArticleCard from '@/components/ArticleCard.vue'
 import Pagination from '@/components/Pagination.vue'
-import { searchArticles } from '@/api/article'
+import { searchBlogArticles } from '@/api/blogArticle'
 import type { Article } from '@/types/article'
 
 const route = useRoute()
@@ -51,7 +51,7 @@ async function doSearch() {
   searched.value = true
   loading.value = true
   try {
-    const data = await searchArticles(kw, { page: page.value, page_size: pageSize.value })
+    const data = await searchBlogArticles(kw, { page: page.value, page_size: pageSize.value })
     articles.value = data.items
     total.value = data.total
   } catch {

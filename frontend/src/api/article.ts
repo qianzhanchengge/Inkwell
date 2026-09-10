@@ -1,6 +1,9 @@
 import request from './request'
-import type { Article, ArticleCreatePayload, ArticleListParams, LikeResult } from '@/types/article'
+import type { Article, ArticleCreatePayload, ArticleListParams } from '@/types/article'
 import type { PageResult } from '@/types/api'
+
+// 工作台（后台）文章管理接口（workbench scope）。
+// 博客前台的公开读与点赞/收藏/分享接口在 `api/blogArticle.ts` / `api/favorite.ts` / `api/share.ts`。
 
 export function getArticleList(params: ArticleListParams): Promise<PageResult<Article>> {
   return request.get('/articles', { params })
@@ -32,14 +35,6 @@ export function publishArticle(id: number | string): Promise<Article> {
 
 export function unpublishArticle(id: number | string): Promise<Article> {
   return request.post(`/articles/${id}/unpublish`)
-}
-
-export function toggleArticleLike(id: number | string): Promise<LikeResult> {
-  return request.post(`/articles/${id}/like`)
-}
-
-export function getArticleLikeStatus(id: number | string): Promise<{ liked: boolean }> {
-  return request.get(`/articles/${id}/like`)
 }
 
 export function searchArticles(keyword: string, params?: ArticleListParams): Promise<PageResult<Article>> {

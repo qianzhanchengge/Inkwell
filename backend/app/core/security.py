@@ -24,12 +24,17 @@ def new_jti() -> str:
     return uuid.uuid4().hex
 
 
+SCOPE_WORKBENCH = "workbench"
+SCOPE_BLOG = "blog"
+
+
 def _create_token(
     subject: str,
     username: str,
     jti: str,
     expires_delta: timedelta,
     token_type: str,
+    scope: str = SCOPE_WORKBENCH,
 ) -> str:
     expire = datetime.now(timezone.utc) + expires_delta
     payload = {
@@ -37,29 +42,42 @@ def _create_token(
         "username": username,
         "jti": jti,
         "type": token_type,
+        "scope": scope,
         "exp": expire,
     }
     return jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
 
 
-def create_access_token(user_id: int, username: str, jti: str) -> str:
+def create_access_token(
+    user_id: int, username: str, jti: str, scope: str = SCOPE_WORKBENCH
+) -> str:
     return _create_token(
         str(user_id),
         username,
         jti,
         timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES),
         "access",
+        scope,
     )
 
 
-def create_refresh_token(user_id: int, username: str, jti: str) -> str:
+def create_refresh_token(
+    user_id: int, username: str, jti: str, scope: str = SCOPE_WORKBENCH
+) -> str:
     return _create_token(
         str(user_id),
         username,
         jti,
         timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS),
         "refresh",
+        scope,
     )
+
+
+def token_scope(payload: dict) -> str:
+    """从载荷取会话作用域；缺失或非法时视为 workbench（兼容旧 Token）。"""
+    scope = payload.get("scope")
+    return scope if scope in (SCOPE_WORKBENCH, SCOPE_BLOG) else SCOPE_WORKBENCH
 
 
 def decode_token(token: str) -> dict:

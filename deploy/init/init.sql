@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS users (
     avatar VARCHAR(255) DEFAULT '',
     bio VARCHAR(500) DEFAULT '',
     status TINYINT DEFAULT 1,
+    user_type TINYINT DEFAULT 1,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_username (username),
@@ -153,3 +154,7 @@ CREATE TABLE IF NOT EXISTS comment_likes (
     UNIQUE KEY uk_comment_user (comment_id, user_id),
     INDEX idx_user (user_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ===== 存量库升级（新建库无需执行，列已包含在上方 users 表定义中）=====
+-- 工作台/博客账号类型拆分（1=工作台用户，2=博客用户）
+-- ALTER TABLE users ADD COLUMN user_type TINYINT DEFAULT 1;

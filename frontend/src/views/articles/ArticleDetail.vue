@@ -10,15 +10,6 @@
           <span>点赞 {{ article.like_count }}</span>
         </div>
         <div v-if="article.summary" class="article-detail__summary">{{ article.summary }}</div>
-        <div class="article-detail__actions">
-          <el-button
-            :type="liked ? 'danger' : 'default'"
-            :loading="liking"
-            @click="onLike"
-          >
-            {{ liked ? '取消点赞' : '点赞' }}
-          </el-button>
-        </div>
         <MarkdownPreview :content="article.content" />
       </template>
     </el-card>
@@ -28,17 +19,14 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
-import { ElMessage } from 'element-plus'
 import PageHeader from '@/components/PageHeader.vue'
 import MarkdownPreview from '@/components/MarkdownPreview.vue'
-import { getArticle, toggleArticleLike } from '@/api/article'
+import { getArticle } from '@/api/article'
 import type { Article } from '@/types/article'
 import { formatDateTime } from '@/utils/format'
 
 const route = useRoute()
 const loading = ref(false)
-const liking = ref(false)
-const liked = ref(false)
 const article = ref<Article | null>(null)
 // 公开浏览与个人管理共用本页：返回目标跟随路由前缀
 const backTo = computed(() => (route.path.startsWith('/p/') ? '/p/articles' : '/articles'))
@@ -47,26 +35,10 @@ async function load() {
   loading.value = true
   try {
     article.value = await getArticle(route.params.id as string)
-    liked.value = article.value?.is_liked ?? false
   } catch (e) {
     // 错误提示已统一处理
   } finally {
     loading.value = false
-  }
-}
-
-async function onLike() {
-  if (!article.value) return
-  liking.value = true
-  try {
-    const res = await toggleArticleLike(article.value.id)
-    article.value.like_count = res.like_count
-    article.value.is_liked = res.liked
-    liked.value = res.liked
-  } catch (e) {
-    // 错误提示已统一处理
-  } finally {
-    liking.value = false
   }
 }
 

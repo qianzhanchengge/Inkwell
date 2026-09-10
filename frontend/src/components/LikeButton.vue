@@ -12,7 +12,7 @@
 
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import { toggleArticleLike } from '@/api/article'
+import { toggleBlogArticleLike } from '@/api/blogArticle'
 import { useLogin } from '@/composables/useLogin'
 
 const props = withDefaults(
@@ -48,7 +48,7 @@ async function onClick() {
   if (!ok) return
   loading.value = true
   try {
-    const res = await toggleArticleLike(props.articleId)
+    const res = await toggleBlogArticleLike(props.articleId)
     liked.value = res.liked
     likeCount.value = res.like_count
     emit('change', { liked: res.liked, like_count: res.like_count })

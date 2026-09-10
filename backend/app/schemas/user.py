@@ -47,6 +47,7 @@ class UserOut(BaseModel):
     avatar: str
     bio: str
     status: int
+    user_type: int = 1
     created_at: datetime
 
     model_config = {"from_attributes": True}

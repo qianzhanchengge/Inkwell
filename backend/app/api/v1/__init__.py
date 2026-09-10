@@ -5,6 +5,7 @@ from app.api.v1 import (
     articles,
     auth,
     blog,
+    blog_auth,
     categories,
     comments,
     notes,
@@ -16,6 +17,7 @@ from app.api.v1 import (
 
 api_router = APIRouter()
 api_router.include_router(auth.router)
+api_router.include_router(blog_auth.router)
 api_router.include_router(users.router)
 api_router.include_router(notes.router)
 api_router.include_router(articles.router)

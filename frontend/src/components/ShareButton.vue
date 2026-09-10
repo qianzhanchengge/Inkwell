@@ -5,7 +5,7 @@
 <script setup lang="ts">
 import { ElMessage } from 'element-plus'
 import { recordShare } from '@/api/share'
-import { useUserStore } from '@/stores/user'
+import { useBlogUserStore } from '@/stores/blogUser'
 
 const props = withDefaults(
   defineProps<{
@@ -15,7 +15,7 @@ const props = withDefaults(
   { size: 'small' }
 )
 
-const userStore = useUserStore()
+const blogUserStore = useBlogUserStore()
 
 async function copyText(text: string): Promise<boolean> {
   try {
@@ -47,8 +47,8 @@ async function onClick() {
   } else {
     ElMessage.warning('复制失败，请手动复制地址栏链接')
   }
-  // 已登录时记录分享统计（静默，不阻塞）
-  if (userStore.token) {
+  // 已登录博客账号时记录分享统计（静默，不阻塞）
+  if (blogUserStore.token) {
     recordShare(props.articleId).catch(() => {})
   }
 }

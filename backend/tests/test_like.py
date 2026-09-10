@@ -1,4 +1,7 @@
-"""点赞/收藏/分享接口测试（博客系统，基于内存假件）。"""
+"""点赞/收藏/分享接口测试（博客系统，基于内存假件）。
+
+认证拆分后：文章管理用工作台会话（workbench），点赞/收藏/分享用博客会话（blog）。
+"""
 import pytest
 import pytest_asyncio
 
@@ -34,17 +37,21 @@ def like_env(monkeypatch, fake_redis, fake_db, fake_mongo):
 
 @pytest_asyncio.fixture
 async def auth(like_env, client):
+    """返回 (工作台头, 博客头, 用户 ID)。"""
     await client.post(
         "/api/v1/auth/register",
         json={"username": "liker", "email": "liker@example.com", "password": "secret123"},
     )
-    login = await client.post(
+    w_login = await client.post(
         "/api/v1/auth/login", json={"username": "liker", "password": "secret123"}
     )
-    token = login.json()["data"]["access_token"]
-    headers = {"Authorization": f"Bearer {token}"}
-    me = await client.get("/api/v1/auth/me", headers=headers)
-    return headers, me.json()["data"]["id"]
+    workbench = {"Authorization": f"Bearer {w_login.json()['data']['access_token']}"}
+    b_login = await client.post(
+        "/api/v1/blog/auth/login", json={"username": "liker", "password": "secret123"}
+    )
+    blog = {"Authorization": f"Bearer {b_login.json()['data']['access_token']}"}
+    me = await client.get("/api/v1/auth/me", headers=workbench)
+    return workbench, blog, me.json()["data"]["id"]
 
 
 async def _publish(client, headers, title="文章"):
@@ -61,67 +68,76 @@ async def _publish(client, headers, title="文章"):
 @pytest.mark.asyncio
 async def test_like_toggle_dedup(auth, client):
     """点赞去重：同一用户重复点赞会取消（toggle）。"""
-    headers, _ = auth
-    article_id = await _publish(client, headers)
+    wheaders, bheaders, _ = auth
+    article_id = await _publish(client, wheaders)
 
-    r1 = await client.post(f"/api/v1/articles/{article_id}/like", headers=headers)
+    r1 = await client.post(f"/api/v1/articles/{article_id}/like", headers=bheaders)
     assert r1.json()["data"]["liked"] is True
     assert r1.json()["data"]["like_count"] == 1
 
-    r2 = await client.post(f"/api/v1/articles/{article_id}/like", headers=headers)
+    r2 = await client.post(f"/api/v1/articles/{article_id}/like", headers=bheaders)
     assert r2.json()["data"]["liked"] is False
     assert r2.json()["data"]["like_count"] == 0
 
-    r3 = await client.post(f"/api/v1/articles/{article_id}/like", headers=headers)
+    r3 = await client.post(f"/api/v1/articles/{article_id}/like", headers=bheaders)
     assert r3.json()["data"]["liked"] is True
     assert r3.json()["data"]["like_count"] == 1
 
 
 @pytest.mark.asyncio
 async def test_like_requires_login(auth, client):
-    headers, _ = auth
-    article_id = await _publish(client, headers)
+    wheaders, _, _ = auth
+    article_id = await _publish(client, wheaders)
     resp = await client.post(f"/api/v1/articles/{article_id}/like")  # 无 token
     assert resp.status_code == 401
 
 
 @pytest.mark.asyncio
-async def test_like_status_endpoint(auth, client):
-    headers, _ = auth
-    article_id = await _publish(client, headers)
+async def test_like_rejects_workbench_token(auth, client):
+    """工作台会话不能用于博客点赞（必须博客单独登录）。"""
+    wheaders, _, _ = auth
+    article_id = await _publish(client, wheaders)
+    resp = await client.post(f"/api/v1/articles/{article_id}/like", headers=wheaders)
+    assert resp.status_code == 401
 
-    # 未点赞（带 token）
-    r = await client.get(f"/api/v1/articles/{article_id}/like", headers=headers)
+
+@pytest.mark.asyncio
+async def test_like_status_endpoint(auth, client):
+    wheaders, bheaders, _ = auth
+    article_id = await _publish(client, wheaders)
+
+    # 未点赞（带博客 token）
+    r = await client.get(f"/api/v1/articles/{article_id}/like", headers=bheaders)
     assert r.json()["data"]["liked"] is False
     # 未登录
     r = await client.get(f"/api/v1/articles/{article_id}/like")
     assert r.json()["data"]["liked"] is False
 
-    await client.post(f"/api/v1/articles/{article_id}/like", headers=headers)
-    r = await client.get(f"/api/v1/articles/{article_id}/like", headers=headers)
+    await client.post(f"/api/v1/articles/{article_id}/like", headers=bheaders)
+    r = await client.get(f"/api/v1/articles/{article_id}/like", headers=bheaders)
     assert r.json()["data"]["liked"] is True
 
 
 @pytest.mark.asyncio
 async def test_favorite_toggle(auth, client):
-    headers, _ = auth
-    article_id = await _publish(client, headers)
+    wheaders, bheaders, _ = auth
+    article_id = await _publish(client, wheaders)
 
-    r1 = await client.post(f"/api/v1/articles/{article_id}/favorite", headers=headers)
+    r1 = await client.post(f"/api/v1/articles/{article_id}/favorite", headers=bheaders)
     assert r1.json()["data"]["favorited"] is True
-    r2 = await client.post(f"/api/v1/articles/{article_id}/favorite", headers=headers)
+    r2 = await client.post(f"/api/v1/articles/{article_id}/favorite", headers=bheaders)
     assert r2.json()["data"]["favorited"] is False
 
 
 @pytest.mark.asyncio
 async def test_list_favorites(auth, client):
-    headers, _ = auth
-    a1 = await _publish(client, headers, "收藏A")
-    a2 = await _publish(client, headers, "收藏B")
-    await client.post(f"/api/v1/articles/{a1}/favorite", headers=headers)
-    await client.post(f"/api/v1/articles/{a2}/favorite", headers=headers)
+    wheaders, bheaders, _ = auth
+    a1 = await _publish(client, wheaders, "收藏A")
+    a2 = await _publish(client, wheaders, "收藏B")
+    await client.post(f"/api/v1/articles/{a1}/favorite", headers=bheaders)
+    await client.post(f"/api/v1/articles/{a2}/favorite", headers=bheaders)
 
-    resp = await client.get("/api/v1/articles/favorites", headers=headers)
+    resp = await client.get("/api/v1/articles/favorites", headers=bheaders)
     data = resp.json()["data"]
     assert data["total"] == 2
     assert {i["id"] for i in data["items"]} == {a1, a2}
@@ -129,12 +145,22 @@ async def test_list_favorites(auth, client):
 
 @pytest.mark.asyncio
 async def test_share_records_and_counts(auth, client):
-    headers, _ = auth
-    article_id = await _publish(client, headers)
+    wheaders, bheaders, _ = auth
+    article_id = await _publish(client, wheaders)
 
-    r = await client.post(f"/api/v1/articles/{article_id}/share", headers=headers)
+    r = await client.post(f"/api/v1/articles/{article_id}/share", headers=bheaders)
     assert r.json()["data"]["shared"] is True
     assert r.json()["data"]["url"] == f"/blog/articles/{article_id}"
 
-    detail = await client.get(f"/api/v1/articles/{article_id}", headers=headers)
+    detail = await client.get(f"/api/v1/articles/{article_id}", headers=wheaders)
     assert detail.json()["data"]["share_count"] == 1
+
+
+@pytest.mark.asyncio
+async def test_share_allows_guest(auth, client):
+    """分享对游客开放（不记录用户）。"""
+    wheaders, _, _ = auth
+    article_id = await _publish(client, wheaders)
+    r = await client.post(f"/api/v1/articles/{article_id}/share")
+    assert r.status_code == 200
+    assert r.json()["data"]["shared"] is True
