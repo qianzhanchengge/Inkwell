@@ -120,7 +120,7 @@ async function loadRelated() {
 
 async function loadComments() {
   try {
-    const data = await getComments(articleId, { page: 1, page_size: 200 })
+    const data = await getComments(articleId, { page: 1, page_size: 100 })
     comments.value = data.items
     commentCount.value = data.total
   } catch {
