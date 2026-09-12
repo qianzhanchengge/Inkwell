@@ -66,8 +66,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
-import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
+import { computed, onMounted, onUnmounted, reactive, ref } from 'vue'
+import { onBeforeRouteLeave } from 'vue-router'
+import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 import PageHeader from '@/components/PageHeader.vue'
 import { getMe } from '@/api/auth'
 import { updateProfile, updatePassword, uploadAvatar } from '@/api/user'
@@ -86,6 +87,9 @@ const form = reactive({
   nickname: '',
   bio: ''
 })
+
+// 已保存的基本信息快照，用于判断是否存在未保存的修改
+const original = reactive({ nickname: '', bio: '' })
 
 const pwdFormRef = ref<FormInstance>()
 /** 校验未通过时，提示信息 5 秒后自动消失 */
@@ -130,6 +134,18 @@ async function load() {
   form.bio = user.bio
   avatarUrl.value = user.avatar || ''
   userStore.setUser(user)
+  syncOriginal()
+}
+
+/** 用当前表单值刷新「已保存」快照 */
+function syncOriginal() {
+  original.nickname = form.nickname
+  original.bio = form.bio
+}
+
+/** 基本信息是否存在未保存的修改 */
+function hasUnsavedChanges() {
+  return form.nickname !== original.nickname || form.bio !== original.bio
 }
 
 async function onSave() {
@@ -140,6 +156,7 @@ async function onSave() {
       bio: form.bio
     })
     userStore.setUser(user)
+    syncOriginal()
     ElMessage.success('保存成功')
   } catch {
     // 错误提示已由拦截器统一处理
@@ -191,7 +208,35 @@ async function onChangePassword() {
   }
 }
 
-onMounted(load)
+/** 有未保存修改时，刷新/关闭浏览器给出原生提示 */
+function handleBeforeUnload(e: BeforeUnloadEvent) {
+  if (!hasUnsavedChanges()) return
+  e.preventDefault()
+  e.returnValue = ''
+}
+
+/** 有未保存修改时，离开当前页面先弹窗确认 */
+onBeforeRouteLeave(async () => {
+  if (!hasUnsavedChanges()) return true
+  try {
+    await ElMessageBox.confirm('有未保存的修改，确认离开？', '提示', {
+      confirmButtonText: '离开',
+      cancelButtonText: '留在本页',
+      type: 'warning'
+    })
+    return true
+  } catch {
+    return false
+  }
+})
+
+onMounted(() => {
+  load()
+  window.addEventListener('beforeunload', handleBeforeUnload)
+})
+onUnmounted(() => {
+  window.removeEventListener('beforeunload', handleBeforeUnload)
+})
 </script>
 
 <style scoped lang="scss">
