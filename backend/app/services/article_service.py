@@ -338,10 +338,8 @@ async def delete_article(user_id: int, article_id: int) -> None:
         if article is None:
             raise NotFoundException("文章不存在")
 
-        # 先清理标签关联（article_tags 有外键约束），再删除文章行
-        await session.execute(
-            article_tags.delete().where(article_tags.c.article_id == article.id)
-        )
+        # 注意：Article.tags 为 lazy="selectin"，ORM 删除主体时会自动清理 article_tags
+        # 关联行，不可再手动 DELETE 关联表，否则会抛 StaleDataError。
         await session.delete(article)
         await session.commit()
         await reset_auto_increment_if_empty(session, "articles")

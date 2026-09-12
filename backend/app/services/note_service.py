@@ -277,9 +277,9 @@ async def delete_note(user_id: int, note_id: int) -> None:
         note = result.scalar_one_or_none()
         if note is None:
             raise NotFoundException("笔记不存在")
-        # 先清理标签关联（外键约束），再删除笔记行
-        # 硬删除：保证全部清空后表为空，ID 可以从 1 重新开始
-        await session.execute(note_tags.delete().where(note_tags.c.note_id == note.id))
+        # 硬删除：保证全部清空后表为空，ID 可以从 1 重新开始。
+        # 注意：Note.tags 为 lazy="selectin"，ORM 删除主体时会自动清理 note_tags 关联行，
+        # 不可再手动 DELETE 关联表，否则会抛 StaleDataError。
         await session.delete(note)
         await session.commit()
         await reset_auto_increment_if_empty(session, "notes")
