@@ -1,5 +1,6 @@
 <template>
   <el-dialog
+    class="login-dialog"
     :model-value="dialogStore.visible"
     :title="mode === 'login' ? '登录博客账号' : '注册博客账号'"
     width="400px"
@@ -155,9 +156,25 @@ async function onSubmit() {
 </script>
 
 <style scoped>
+/* 弹窗被 teleport 到 body，无法继承 .blog-layout 的变量，这里自带一份以保持配色一致 */
+.login-dialog {
+  --el-color-primary: #b4443a;
+  --el-color-primary-dark-2: #90362e;
+  --el-color-primary-light-3: #cb7c75;
+  --el-color-primary-light-5: #daa29d;
+  --el-color-primary-light-7: #e9c7c4;
+  --el-color-primary-light-8: #f0dad8;
+  --el-color-primary-light-9: #f8eceb;
+  --el-text-color-primary: #14161a;
+  --el-text-color-regular: #4a4f57;
+  --el-text-color-secondary: #8b9099;
+  --el-border-color: #e9e6e1;
+  --el-border-radius-base: 8px;
+  border-radius: 10px;
+}
 .login-dialog__tip {
   font-size: 13px;
-  color: #909399;
+  color: #8b9099;
   margin-top: -8px;
 }
 </style>

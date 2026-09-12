@@ -44,7 +44,8 @@ const routes: RouteRecordRaw[] = [
       { path: 'categories/:id', name: 'blog-category', component: () => import('@/views/blog/BlogCategory.vue'), meta: { public: true, title: '分类' } },
       { path: 'tags', name: 'blog-tags', component: () => import('@/views/blog/BlogTag.vue'), meta: { public: true, title: '标签' } },
       { path: 'tags/:tag', name: 'blog-tag', component: () => import('@/views/blog/BlogTag.vue'), meta: { public: true, title: '标签' } },
-      { path: 'archive', name: 'blog-archive', component: () => import('@/views/blog/BlogArchive.vue'), meta: { public: true, title: '归档' } }
+      { path: 'archive', name: 'blog-archive', component: () => import('@/views/blog/BlogArchive.vue'), meta: { public: true, title: '归档' } },
+      { path: ':pathMatch(.*)*', name: 'blog-notfound', component: () => import('@/views/blog/BlogNotFound.vue'), meta: { public: true, title: '页面不存在' } }
     ]
   },
   {
@@ -56,8 +57,11 @@ const routes: RouteRecordRaw[] = [
     redirect: (to) => `/blog/articles/${String(to.params.id)}`
   },
   {
+    /* 未匹配路径渲染品牌化 404（勿再重定向到 /dashboard：会把游客丢进需登录的后台） */
     path: '/:pathMatch(.*)*',
-    redirect: '/dashboard'
+    name: 'not-found',
+    component: () => import('@/views/blog/BlogNotFound.vue'),
+    meta: { public: true, title: '页面不存在' }
   }
 ]
 

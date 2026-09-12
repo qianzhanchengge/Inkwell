@@ -1,9 +1,9 @@
 <template>
   <el-button
-    :type="liked ? 'danger' : 'default'"
+    class="like-button"
+    :class="{ 'is-active': liked }"
     :loading="loading"
     :size="size"
-    plain
     @click="onClick"
   >
     {{ liked ? '已赞' : '点赞' }}{{ likeCount > 0 ? ` ${likeCount}` : '' }}
@@ -59,3 +59,30 @@ async function onClick() {
   }
 }
 </script>
+
+<style scoped lang="scss">
+.like-button {
+  border-radius: var(--blog-radius-sm);
+  background: var(--blog-paper);
+  border-color: var(--blog-line);
+  color: var(--blog-ink-soft);
+  font-variant-numeric: tabular-nums;
+  transition: background 0.2s, border-color 0.2s, color 0.2s, transform 0.15s;
+
+  &:hover {
+    border-color: var(--blog-accent);
+    color: var(--blog-accent);
+    background: var(--blog-paper);
+  }
+
+  &:active {
+    transform: translateY(1px);
+  }
+
+  &.is-active {
+    background: var(--blog-accent-soft);
+    border-color: var(--blog-accent-soft);
+    color: var(--blog-accent);
+  }
+}
+</style>

@@ -50,20 +50,44 @@ function onSubmit() {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
 .comment-input {
   margin-top: 16px;
+
+  /* 聚焦时强调色边框 + 柔和外发光 */
+  :deep(.el-textarea__inner) {
+    border-radius: var(--blog-radius-sm);
+    font-size: 14px;
+    line-height: 1.7;
+    border: 1px solid var(--blog-line);
+    box-shadow: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+
+    &:focus {
+      border-color: var(--blog-accent);
+      box-shadow: 0 0 0 3px var(--blog-accent-soft);
+    }
+  }
+
+  :deep(.el-input__count) {
+    color: var(--blog-ink-mute);
+    background: transparent;
+  }
+
+  :deep(.el-button) {
+    transition: color 0.2s, transform 0.15s;
+  }
 }
 .comment-input__reply {
   font-size: 13px;
-  color: #909399;
+  color: var(--blog-ink-mute);
   margin-bottom: 6px;
   display: flex;
   align-items: center;
   gap: 6px;
 }
 .comment-input__actions {
-  margin-top: 8px;
+  margin-top: 10px;
   display: flex;
   justify-content: flex-end;
 }

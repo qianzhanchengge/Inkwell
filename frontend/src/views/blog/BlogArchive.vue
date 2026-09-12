@@ -60,25 +60,48 @@ onMounted(load)
 
 <style scoped lang="scss">
 .blog-archive {
-  max-width: 820px;
+  max-width: var(--blog-reading);
   margin: 0 auto;
-  padding: 24px 16px;
+  padding: 40px 20px 56px;
 }
 .blog-archive__title {
-  margin: 0 0 16px;
-  font-size: 22px;
+  margin: 0 0 20px;
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--blog-ink);
+  text-wrap: balance;
 }
 .blog-archive__year-title {
-  margin: 12px 0;
-  color: #303133;
+  display: inline-flex;
+  align-items: center;
+  margin: 16px 0 8px;
+  padding: 3px 10px;
+  border-radius: var(--blog-radius-sm);
+  background: var(--blog-accent-soft);
+  color: var(--blog-accent);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums;
 }
 .blog-archive__month {
   padding: 8px 0;
-  border-bottom: 1px dashed #ebeef5;
-  color: #606266;
+  border-bottom: 1px solid var(--blog-line);
+  color: var(--blog-ink-soft);
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+  transition: color 0.2s, transform 0.2s;
+  &:hover {
+    color: var(--blog-accent);
+    transform: translateX(2px);
+  }
+  &:active {
+    transform: translateX(2px) translateY(1px);
+  }
 }
 .blog-archive__count {
-  color: #c0c4cc;
+  color: var(--blog-ink-mute);
   font-size: 12px;
   margin-left: 8px;
 }

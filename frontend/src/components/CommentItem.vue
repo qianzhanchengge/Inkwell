@@ -89,19 +89,21 @@ async function onLike() {
 .comment-item {
   display: flex;
   gap: 10px;
-  padding: 12px 0;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--blog-line);
 }
 .comment-item__avatar {
   flex-shrink: 0;
   width: 36px;
   height: 36px;
-  border-radius: 50%;
-  background: #409eff;
+  border-radius: 10px;
+  background: var(--blog-accent);
   color: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 14px;
+  font-weight: 600;
 }
 .comment-item__body {
   flex: 1;
@@ -114,30 +116,53 @@ async function onLike() {
   flex-wrap: wrap;
 }
 .comment-item__nick {
-  font-weight: 500;
-  color: #303133;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--blog-ink);
 }
 .comment-item__replyto {
-  color: #909399;
+  color: var(--blog-ink-mute);
   font-size: 12px;
 }
 .comment-item__time {
-  color: #c0c4cc;
+  color: var(--blog-ink-mute);
   font-size: 12px;
+  font-variant-numeric: tabular-nums;
 }
 .comment-item__content {
-  color: #303133;
-  margin: 6px 0;
+  color: var(--blog-ink-soft);
+  font-size: 15px;
+  line-height: 1.7;
+  margin: 6px 0 4px;
   white-space: pre-wrap;
   word-break: break-word;
 }
 .comment-item__actions {
   display: flex;
   gap: 4px;
+
+  :deep(.el-button) {
+    font-size: 13px;
+    color: var(--blog-ink-mute);
+    transition: color 0.2s, transform 0.15s;
+
+    &:hover {
+      color: var(--blog-accent);
+    }
+
+    &:active {
+      transform: translateY(1px);
+    }
+  }
+
+  :deep(.el-button--danger) {
+    color: var(--blog-accent);
+  }
 }
+/* 子回复：用左侧竖线形成层级，替代纯缩进 */
 .comment-item__children {
-  margin-top: 8px;
+  margin-top: 4px;
   padding-left: 12px;
-  border-left: 2px solid #f0f2f5;
+  border-left: 2px solid var(--blog-line);
 }
 </style>

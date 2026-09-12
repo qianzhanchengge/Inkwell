@@ -26,6 +26,9 @@ export interface CategoryStat extends Category {
 }
 
 export interface TagStat extends Tag {
+  /** 后端 /blog/tags 返回的字段 */
+  use_count?: number
+  /** 兼容历史字段 */
   count?: number
 }
 

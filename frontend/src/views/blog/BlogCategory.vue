@@ -3,10 +3,13 @@
     <!-- 某分类文章列表 -->
     <template v-if="categoryId">
       <h2 class="blog-category__title">{{ categoryName }}</h2>
-      <div v-loading="loading">
+      <template v-if="loading">
+        <ArticleCardSkeleton v-for="i in 3" :key="i" />
+      </template>
+      <template v-else>
         <ArticleCard v-for="a in articles" :key="a.id" :article="a" />
-        <el-empty v-if="!loading && !articles.length" description="该分类暂无文章" />
-      </div>
+        <el-empty v-if="!articles.length" description="该分类暂无文章" />
+      </template>
       <Pagination
         :page="page"
         :page-size="pageSize"
@@ -39,6 +42,7 @@
 import { ref, computed, watch, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import ArticleCard from '@/components/ArticleCard.vue'
+import ArticleCardSkeleton from '@/components/ArticleCardSkeleton.vue'
 import Pagination from '@/components/Pagination.vue'
 import { getBlogFeed, getBlogCategories } from '@/api/blog'
 import type { Article } from '@/types/article'
@@ -113,34 +117,47 @@ onMounted(() => {
 
 <style scoped lang="scss">
 .blog-category {
-  max-width: 820px;
+  max-width: var(--blog-reading);
   margin: 0 auto;
-  padding: 24px 16px;
+  padding: 40px 20px 56px;
 }
 .blog-category__title {
-  margin: 0 0 16px;
-  font-size: 22px;
+  margin: 0 0 20px;
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--blog-ink);
+  text-wrap: balance;
 }
 .blog-category__grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 12px;
+  margin-bottom: 20px;
 }
 .blog-category__item {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 16px;
-  border: 1px solid #ebeef5;
-  border-radius: 6px;
-  color: #303133;
+  border: 1px solid var(--blog-line);
+  border-radius: var(--blog-radius-sm);
+  background: var(--blog-surface);
+  color: var(--blog-ink);
+  transition: border-color 0.2s, color 0.2s, transform 0.2s, box-shadow 0.2s;
   &:hover {
-    border-color: #409eff;
-    color: #409eff;
+    border-color: var(--blog-accent);
+    color: var(--blog-accent);
+    box-shadow: var(--blog-shadow-sm);
+    transform: translateX(2px);
+  }
+  &:active {
+    transform: translateX(2px) translateY(1px);
   }
 }
 .blog-category__count {
-  color: #c0c4cc;
+  color: var(--blog-ink-mute);
   font-size: 12px;
+  font-variant-numeric: tabular-nums;
 }
 </style>

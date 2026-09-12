@@ -3,10 +3,13 @@
     <!-- 某标签文章列表 -->
     <template v-if="tagName">
       <h2 class="blog-tag__title"># {{ tagName }}</h2>
-      <div v-loading="loading">
+      <template v-if="loading">
+        <ArticleCardSkeleton v-for="i in 3" :key="i" />
+      </template>
+      <template v-else>
         <ArticleCard v-for="a in articles" :key="a.id" :article="a" />
-        <el-empty v-if="!loading && !articles.length" description="该标签暂无文章" />
-      </div>
+        <el-empty v-if="!articles.length" description="该标签暂无文章" />
+      </template>
       <Pagination
         :page="page"
         :page-size="pageSize"
@@ -30,6 +33,7 @@
 import { ref, computed, watch, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import ArticleCard from '@/components/ArticleCard.vue'
+import ArticleCardSkeleton from '@/components/ArticleCardSkeleton.vue'
 import Pagination from '@/components/Pagination.vue'
 import TagCloud from '@/components/TagCloud.vue'
 import { getBlogFeed, getBlogTags } from '@/api/blog'
@@ -98,12 +102,16 @@ onMounted(() => {
 
 <style scoped lang="scss">
 .blog-tag {
-  max-width: 820px;
+  max-width: var(--blog-reading);
   margin: 0 auto;
-  padding: 24px 16px;
+  padding: 40px 20px 56px;
 }
 .blog-tag__title {
-  margin: 0 0 16px;
-  font-size: 22px;
+  margin: 0 0 20px;
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--blog-ink);
+  text-wrap: balance;
 }
 </style>

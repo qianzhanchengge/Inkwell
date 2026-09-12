@@ -1,5 +1,5 @@
 <template>
-  <el-button :size="size" plain @click="onClick">🔗 分享</el-button>
+  <el-button class="share-button" :size="size" @click="onClick">分享</el-button>
 </template>
 
 <script setup lang="ts">
@@ -53,3 +53,23 @@ async function onClick() {
   }
 }
 </script>
+
+<style scoped lang="scss">
+.share-button {
+  border-radius: var(--blog-radius-sm);
+  background: var(--blog-paper);
+  border-color: var(--blog-line);
+  color: var(--blog-ink-soft);
+  transition: background 0.2s, border-color 0.2s, color 0.2s, transform 0.15s;
+
+  &:hover {
+    border-color: var(--blog-accent);
+    color: var(--blog-accent);
+    background: var(--blog-paper);
+  }
+
+  &:active {
+    transform: translateY(1px);
+  }
+}
+</style>
