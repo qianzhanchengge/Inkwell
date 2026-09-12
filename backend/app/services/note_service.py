@@ -7,7 +7,7 @@ from sqlalchemy import func, select
 from app.core.cache import cache_get, cache_invalidate_pattern, cache_set
 from app.core.exceptions import ForbiddenException, NotFoundException
 from app.database.mongodb import get_note_contents
-from app.database.mysql import get_session_factory
+from app.database.mysql import get_session_factory, reset_auto_increment_if_empty
 from app.models.category import Category
 from app.models.note import Note, note_tags
 from app.schemas.note import NoteCreate, NoteUpdate
@@ -271,13 +271,22 @@ async def update_note(user_id: int, note_id: int, data: NoteUpdate) -> dict:
 async def delete_note(user_id: int, note_id: int) -> None:
     factory = get_session_factory()
     async with factory() as session:
-        result = await session.execute(select(Note).where(Note.id == note_id, Note.user_id == user_id))
+        result = await session.execute(
+            select(Note).where(Note.id == note_id, Note.user_id == user_id)
+        )
         note = result.scalar_one_or_none()
         if note is None:
             raise NotFoundException("笔记不存在")
-        note.status = 0  # 软删除
+        # 先清理标签关联（外键约束），再删除笔记行
+        # 硬删除：保证全部清空后表为空，ID 可以从 1 重新开始
+        await session.execute(note_tags.delete().where(note_tags.c.note_id == note.id))
+        await session.delete(note)
         await session.commit()
-        await cache_invalidate_pattern(f"cache:notes:list:{user_id}:*")
+        await reset_auto_increment_if_empty(session, "notes")
+
+    # 清理 MongoDB 正文
+    await get_note_contents().delete_one({"note_id": note_id})
+    await cache_invalidate_pattern(f"cache:notes:list:{user_id}:*")
 
 
 async def toggle_pin(user_id: int, note_id: int) -> bool:

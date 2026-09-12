@@ -1,4 +1,4 @@
-export const APP_TITLE = import.meta.env.VITE_APP_TITLE || '个人工作台'
+export const APP_TITLE = import.meta.env.VITE_APP_TITLE || '工作台'
 
 export const NOTE_STATUS: Record<number, string> = {
   0: '已删除',

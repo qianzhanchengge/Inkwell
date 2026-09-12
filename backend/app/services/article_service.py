@@ -7,7 +7,7 @@ from sqlalchemy import func, select
 from app.core.cache import cache_invalidate_pattern
 from app.core.exceptions import APIException, ForbiddenException, NotFoundException
 from app.database.mongodb import get_article_contents
-from app.database.mysql import get_session_factory
+from app.database.mysql import get_session_factory, reset_auto_increment_if_empty
 from app.database.redis import get_redis
 from app.models.article import Article, article_tags
 from app.models.article_like import ArticleLike
@@ -344,6 +344,7 @@ async def delete_article(user_id: int, article_id: int) -> None:
         )
         await session.delete(article)
         await session.commit()
+        await reset_auto_increment_if_empty(session, "articles")
 
     # 清理 MongoDB 正文
     await get_article_contents().delete_one({"article_id": article_id})

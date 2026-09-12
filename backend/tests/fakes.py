@@ -12,7 +12,7 @@ from datetime import datetime
 from sqlalchemy import Select, func
 from sqlalchemy.sql.selectable import ScalarSelect
 from sqlalchemy.sql.dml import Delete, Insert, Update
-from sqlalchemy.sql.elements import BinaryExpression, BooleanClauseList
+from sqlalchemy.sql.elements import BinaryExpression, BooleanClauseList, TextClause
 
 from app.database.mysql import Base
 from app.models.article import Article, article_tags
@@ -292,6 +292,8 @@ class _FakeSession:
 
     # -- 语句执行 ---------------------------------------------------------- #
     async def execute(self, statement):
+        if isinstance(statement, TextClause):
+            return _FakeResult([self._handle_text(statement)], self)
         if isinstance(statement, Insert):
             self._handle_insert(statement)
             return _FakeResult([], self)
@@ -355,6 +357,15 @@ class _FakeSession:
             tag_ids = sorted({t for (a, t) in self.factory.article_tags_rel if a == obj.id})
             obj.tags = [t for t in self.factory.rows(Tag) if t.id in tag_ids]
         return obj
+
+    def _handle_text(self, statement):
+        """处理 text() 原始 SQL：SELECT COUNT(*) 返回表行数，其余（如 ALTER）返回 None。"""
+        sql = str(statement)
+        m = re.search(r"FROM\s+(\w+)", sql, re.IGNORECASE)
+        if m and "count" in sql.lower():
+            model = _MODEL_BY_TABLE.get(m.group(1))
+            return len(self.factory.rows(model)) if model is not None else 0
+        return None
 
     def _handle_select(self, statement):
         model = _model_of(statement)

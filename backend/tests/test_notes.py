@@ -156,14 +156,20 @@ async def test_update_note_tags(auth, client):
 
 
 @pytest.mark.asyncio
-async def test_delete_note_soft(auth, client):
+async def test_delete_note_hard(auth, client, notes_env):
+    """删除笔记为硬删除（数据行与正文一并移除），清空后 ID 可从 1 重新开始。"""
+    from app.models.note import Note
+
     headers, _ = auth
+    fake_db, _fake_mongo = notes_env
     created = await _create_note(client, headers)
     note_id = created.json()["data"]["id"]
     resp = await client.delete(f"/api/v1/notes/{note_id}", headers=headers)
     assert resp.status_code == 200
     get = await client.get(f"/api/v1/notes/{note_id}", headers=headers)
     assert get.status_code == 404
+    # 数据行已物理删除（非软删除）
+    assert all(n.id != note_id for n in fake_db.rows(Note))
 
 
 @pytest.mark.asyncio

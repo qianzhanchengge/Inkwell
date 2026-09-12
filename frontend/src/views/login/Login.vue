@@ -2,7 +2,7 @@
   <div class="auth-page">
     <el-card class="auth-card">
       <h2 class="auth-card__title">登录</h2>
-      <el-form ref="formRef" :model="form" :rules="rules" @submit.prevent="onSubmit">
+      <el-form ref="formRef" :model="form" :rules="rules" @validate="onValidate" @submit.prevent="onSubmit">
         <el-form-item prop="username">
           <el-input v-model="form.username" placeholder="用户名" />
         </el-form-item>
@@ -27,12 +27,15 @@ import { reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
 import { useAuth } from '@/composables/useAuth'
+import { useAutoClearValidate } from '@/composables/useAutoClearValidate'
 
 const route = useRoute()
 const router = useRouter()
 const { login } = useAuth()
 
 const formRef = ref<FormInstance>()
+/** 校验未通过时，提示信息 5 秒后自动消失 */
+const onValidate = useAutoClearValidate(formRef)
 const loading = ref(false)
 const form = reactive({ username: '', password: '' })
 

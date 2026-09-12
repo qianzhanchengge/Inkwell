@@ -46,6 +46,7 @@
         :rules="pwdRules"
         label-width="80px"
         style="max-width: 480px"
+        @validate="onValidate"
       >
         <el-form-item label="原密码" prop="old_password">
           <el-input v-model="pwdForm.old_password" type="password" show-password />
@@ -71,6 +72,7 @@ import PageHeader from '@/components/PageHeader.vue'
 import { getMe } from '@/api/auth'
 import { updateProfile, updatePassword, uploadAvatar } from '@/api/user'
 import { useUserStore } from '@/stores/user'
+import { useAutoClearValidate } from '@/composables/useAutoClearValidate'
 
 const userStore = useUserStore()
 const saving = ref(false)
@@ -86,6 +88,8 @@ const form = reactive({
 })
 
 const pwdFormRef = ref<FormInstance>()
+/** 校验未通过时，提示信息 5 秒后自动消失 */
+const onValidate = useAutoClearValidate(pwdFormRef)
 const pwdForm = reactive({
   old_password: '',
   new_password: '',

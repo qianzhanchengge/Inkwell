@@ -1,7 +1,7 @@
 <template>
   <el-container class="layout">
     <el-aside :width="isCollapsed ? '64px' : '200px'" class="layout__aside">
-      <div class="layout__logo">{{ isCollapsed ? '工' : '个人工作台' }}</div>
+      <div class="layout__logo">{{ isCollapsed ? '工' : '工作台' }}</div>
       <el-menu
         :default-active="activeMenu"
         :collapse="isCollapsed"
@@ -55,7 +55,7 @@ const userStore = useUserStore()
 
 const isCollapsed = computed(() => appStore.sidebarCollapsed)
 const activeMenu = computed(() => route.path)
-const pageTitle = computed(() => (route.meta.title as string) || '个人工作台')
+const pageTitle = computed(() => (route.meta.title as string) || '工作台')
 const userName = computed(() => userStore.userInfo?.nickname || userStore.userInfo?.username || '')
 
 function toggleSidebar() {

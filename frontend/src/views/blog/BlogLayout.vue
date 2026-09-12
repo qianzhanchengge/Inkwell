@@ -2,7 +2,7 @@
   <div class="blog-layout">
     <header class="blog-layout__header">
       <div class="blog-layout__inner">
-        <router-link to="/blog" class="blog-layout__logo">个人博客</router-link>
+        <router-link to="/blog" class="blog-layout__logo">博客</router-link>
         <nav class="blog-layout__nav">
           <router-link to="/blog">首页</router-link>
           <router-link to="/blog/categories">分类</router-link>
@@ -29,7 +29,7 @@
     </main>
 
     <footer class="blog-layout__footer">
-      个人工作台 · 博客系统
+      工作台 · 博客系统
     </footer>
   </div>
 </template>

@@ -5,7 +5,7 @@ from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import NotFoundException
-from app.database.mysql import get_session_factory
+from app.database.mysql import get_session_factory, reset_auto_increment_if_empty
 from app.models.article import article_tags
 from app.models.note import note_tags
 from app.models.tag import Tag
@@ -72,3 +72,4 @@ async def delete_tag(user_id: int, tag_id: int) -> None:
 
         await session.delete(tag)
         await session.commit()
+        await reset_auto_increment_if_empty(session, "tags")

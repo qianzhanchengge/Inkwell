@@ -4,7 +4,7 @@ from typing import List
 from sqlalchemy import select
 
 from app.core.exceptions import NotFoundException
-from app.database.mysql import get_session_factory
+from app.database.mysql import get_session_factory, reset_auto_increment_if_empty
 from app.models.category import Category
 from app.schemas.category import CategoryCreate, CategoryUpdate
 
@@ -81,3 +81,4 @@ async def delete_category(user_id: int, category_id: int) -> None:
 
         await session.delete(category)
         await session.commit()
+        await reset_auto_increment_if_empty(session, "categories")

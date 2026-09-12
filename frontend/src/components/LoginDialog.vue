@@ -7,7 +7,7 @@
     :close-on-press-escape="false"
     @update:model-value="onVisibleChange"
   >
-    <el-form ref="formRef" :model="form" :rules="rules" @submit.prevent="onSubmit">
+    <el-form ref="formRef" :model="form" :rules="rules" @validate="onValidate" @submit.prevent="onSubmit">
       <el-form-item prop="username">
         <el-input v-model="form.username" placeholder="用户名" />
       </el-form-item>
@@ -55,11 +55,14 @@ import { computed, reactive, ref } from 'vue'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
 import { useLoginDialogStore } from '@/stores/loginDialog'
 import { useBlogUserStore } from '@/stores/blogUser'
+import { useAutoClearValidate } from '@/composables/useAutoClearValidate'
 
 const dialogStore = useLoginDialogStore()
 const blogUserStore = useBlogUserStore()
 
 const formRef = ref<FormInstance>()
+/** 校验未通过时，提示信息 5 秒后自动消失 */
+const onValidate = useAutoClearValidate(formRef)
 const loading = ref(false)
 const mode = ref<'login' | 'register'>('login')
 const form = reactive({

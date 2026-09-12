@@ -6,6 +6,7 @@
 from typing import AsyncGenerator
 from urllib.parse import quote_plus
 
+from sqlalchemy import text
 from sqlalchemy.dialects.mysql import aiomysql as _aiomysql
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
@@ -71,3 +72,17 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
     factory = get_session_factory()
     async with factory() as session:
         yield session
+
+
+async def reset_auto_increment_if_empty(session: AsyncSession, table: str) -> None:
+    """表内无任何行时，把 AUTO_INCREMENT 重置为 1。
+
+    MySQL 的 AUTO_INCREMENT 计数器不会随删除回退，导致把数据全部清空后
+    新建记录的 ID 仍从历史最大值继续增长。此处在表已空时显式重置，
+    使清空后的新记录重新从 1 开始编号。
+
+    ``table`` 仅接受内部写死的表名常量，不接受外部输入。
+    """
+    count = (await session.execute(text(f"SELECT COUNT(*) FROM {table}"))).scalar_one()
+    if count == 0:
+        await session.execute(text(f"ALTER TABLE {table} AUTO_INCREMENT = 1"))
