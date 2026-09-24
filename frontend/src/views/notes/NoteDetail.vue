@@ -12,8 +12,10 @@
         <h2 class="note-detail__title">{{ note.title }}</h2>
         <div class="note-detail__meta">
           <el-tag v-if="note.is_pinned" type="warning" size="small">置顶</el-tag>
-          <span v-if="note.category" class="note-detail__category">{{ note.category.name }}</span>
-          <span class="note-detail__time">{{ formatDateTime(note.updated_at) }}</span>
+          <span v-if="note.category" class="note-detail__meta-item">
+            {{ note.category.name }}
+          </span>
+          <span class="note-detail__meta-item">{{ formatDateTime(note.updated_at) }}</span>
         </div>
         <div v-if="note.tags?.length" class="note-detail__tags">
           <el-tag v-for="tag in note.tags" :key="tag.id" size="small">{{ tag.name }}</el-tag>
@@ -114,21 +116,40 @@ onMounted(load)
 <style scoped lang="scss">
 .note-detail__title {
   margin: 0 0 12px;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.3;
+  color: var(--blog-ink);
 }
+
 .note-detail__meta {
   display: flex;
   align-items: center;
-  gap: 8px;
-  color: #909399;
-  font-size: 13px;
+  gap: 10px;
   margin-bottom: 12px;
+  font-size: 13px;
+  color: var(--blog-ink-mute);
+  font-variant-numeric: tabular-nums;
 }
+
+/* 元信息之间用「·」分隔，避免依赖大间距 */
+.note-detail__meta-item + .note-detail__meta-item::before {
+  content: '·';
+  margin-right: 10px;
+  color: var(--blog-ink-mute);
+}
+
 .note-detail__tags {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
-  margin-bottom: 16px;
+  margin-bottom: 18px;
 }
+
 .note-detail__content {
-  line-height: 1.7;
+  font-size: 15px;
+  line-height: 1.8;
+  color: var(--blog-ink-soft);
 }
 </style>

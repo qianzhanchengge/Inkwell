@@ -1,6 +1,6 @@
 <template>
-  <div class="category-manage">
-    <PageHeader title="分类管理" show-back />
+  <div class="category-manage page-stack">
+    <PageHeader title="分类管理" description="维护笔记与文章的所属分类" show-back />
 
     <el-card>
       <el-tabs v-model="type" @tab-change="load">
@@ -8,20 +8,31 @@
         <el-tab-pane label="文章分类" :name="2" />
       </el-tabs>
 
-      <div class="category-manage__toolbar">
-        <el-button type="primary" @click="openCreate">新增分类</el-button>
-      </div>
+      <PageToolbar>
+        <template #info>共 {{ categories.length }} 个分类</template>
+        <el-button type="primary" @click="openCreate">
+          <AppIcon name="plus" :size="15" />新增分类
+        </el-button>
+      </PageToolbar>
 
       <el-table :data="categories" v-loading="loading" style="width: 100%">
         <el-table-column prop="id" label="ID" width="80" />
         <el-table-column prop="name" label="名称" min-width="200" />
-        <el-table-column prop="sort_order" label="排序" width="100" />
-        <el-table-column label="操作" width="160" fixed="right">
+        <el-table-column prop="sort_order" label="排序" width="100" align="right" />
+        <el-table-column label="操作" width="180" fixed="right">
           <template #default="{ row }">
-            <el-button link type="primary" @click="openEdit(row)">编辑</el-button>
-            <el-button link type="danger" @click="onDelete(row.id)">删除</el-button>
+            <el-button link type="primary" @click="openEdit(row)">
+              <AppIcon name="edit" :size="14" />编辑
+            </el-button>
+            <el-button link type="danger" @click="onDelete(row.id)">
+              <AppIcon name="trash" :size="14" />删除
+            </el-button>
           </template>
         </el-table-column>
+
+        <template #empty>
+          <EmptyState description="还没有分类" hint="点击「新增分类」创建第一个" />
+        </template>
       </el-table>
     </el-card>
 
@@ -50,6 +61,9 @@
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import PageHeader from '@/components/PageHeader.vue'
+import PageToolbar from '@/components/PageToolbar.vue'
+import EmptyState from '@/components/EmptyState.vue'
+import AppIcon from '@/components/AppIcon.vue'
 import { getCategoryList, createCategory, updateCategory, deleteCategory } from '@/api/category'
 import type { Category } from '@/types/api'
 
@@ -116,11 +130,3 @@ async function onDelete(id: number) {
 
 onMounted(load)
 </script>
-
-<style scoped lang="scss">
-.category-manage__toolbar {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 16px;
-}
-</style>

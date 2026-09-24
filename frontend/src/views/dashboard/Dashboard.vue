@@ -1,23 +1,25 @@
 <template>
-  <div class="dashboard">
-    <el-row :gutter="16">
-      <el-col v-for="card in cards" :key="card.label" :span="6">
-        <el-card class="dashboard__card" shadow="hover">
-          <div class="dashboard__card-label">{{ card.label }}</div>
-          <div class="dashboard__card-value">{{ card.value }}</div>
-        </el-card>
-      </el-col>
-    </el-row>
+  <div class="dashboard page-stack">
+    <div class="dashboard__stats">
+      <div v-for="card in cards" :key="card.label" class="dashboard__stat">
+        <span class="dashboard__stat-label">{{ card.label }}</span>
+        <span class="dashboard__stat-value">{{ card.value }}</span>
+      </div>
+    </div>
 
-    <el-card class="dashboard__quick" shadow="never">
+    <el-card>
       <template #header><span>快捷入口</span></template>
-      <el-space wrap>
-        <el-button type="primary" @click="$router.push('/notes/new')">新建笔记</el-button>
-        <el-button type="success" @click="$router.push('/articles/new')">写文章</el-button>
-      </el-space>
+      <div class="dashboard__actions">
+        <el-button type="primary" @click="$router.push('/notes/new')">
+          <AppIcon name="plus" :size="15" />新建笔记
+        </el-button>
+        <el-button @click="$router.push('/articles/new')">
+          <AppIcon name="edit" :size="15" />写文章
+        </el-button>
+      </div>
     </el-card>
 
-    <el-card class="dashboard__trend" shadow="never">
+    <el-card>
       <template #header><span>创作趋势（近 30 天）</span></template>
       <div ref="chartRef" class="dashboard__chart" />
     </el-card>
@@ -27,6 +29,7 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref } from 'vue'
 import * as echarts from 'echarts'
+import AppIcon from '@/components/AppIcon.vue'
 import { getStatsOverview, getStatsTrend, type TrendItem } from '@/api/stats'
 
 interface Card {
@@ -50,11 +53,24 @@ function renderChart(data: TrendItem[]) {
     chart = echarts.init(chartRef.value)
   }
   chart.setOption({
+    // 与全局设计 token 保持一致（印章红 + 中性灰）
+    color: ['#b4443a', '#8b9099'],
     tooltip: { trigger: 'axis' },
-    legend: { data: ['笔记', '文章'] },
-    grid: { left: 40, right: 20, top: 40, bottom: 30 },
-    xAxis: { type: 'category', boundaryGap: false, data: data.map((d) => d.date.slice(5)) },
-    yAxis: { type: 'value', minInterval: 1 },
+    legend: { data: ['笔记', '文章'], textStyle: { color: '#4a4f57' } },
+    grid: { left: 44, right: 24, top: 44, bottom: 32 },
+    xAxis: {
+      type: 'category',
+      boundaryGap: false,
+      data: data.map((d) => d.date.slice(5)),
+      axisLine: { lineStyle: { color: '#e9e6e1' } },
+      axisLabel: { color: '#8b9099' }
+    },
+    yAxis: {
+      type: 'value',
+      minInterval: 1,
+      splitLine: { lineStyle: { color: '#f2f0ec' } },
+      axisLabel: { color: '#8b9099' }
+    },
     series: [
       { name: '笔记', type: 'line', smooth: true, data: data.map((d) => d.note_count) },
       { name: '文章', type: 'line', smooth: true, data: data.map((d) => d.article_count) }
@@ -94,24 +110,54 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped lang="scss">
-.dashboard__card {
-  text-align: center;
+.dashboard__stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 20px;
 }
-.dashboard__card-label {
-  color: #909399;
-  font-size: 14px;
+
+@media (max-width: 900px) {
+  .dashboard__stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
-.dashboard__card-value {
-  margin-top: 8px;
-  font-size: 28px;
-  font-weight: 600;
+
+.dashboard__stat {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 18px 20px;
+  background: var(--blog-surface);
+  border-radius: var(--blog-radius);
+  box-shadow: var(--blog-shadow-sm);
+  transition: box-shadow 0.25s, transform 0.25s;
 }
-.dashboard__quick {
-  margin-top: 16px;
+
+.dashboard__stat:hover {
+  box-shadow: var(--blog-shadow-md);
+  transform: translateY(-2px);
 }
-.dashboard__trend {
-  margin-top: 16px;
+
+.dashboard__stat-label {
+  font-size: 13px;
+  color: var(--blog-ink-mute);
 }
+
+.dashboard__stat-value {
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  color: var(--blog-ink);
+}
+
+.dashboard__actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
 .dashboard__chart {
   height: 300px;
 }

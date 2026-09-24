@@ -1,5 +1,5 @@
 <template>
-  <div class="pagination-wrap">
+  <div v-if="total > 0" class="pagination-wrap">
     <el-pagination
       :current-page="page"
       :page-size="pageSize"
@@ -49,5 +49,7 @@ function onSizeChange(value: number) {
   display: flex;
   justify-content: flex-end;
   margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--blog-line);
 }
 </style>

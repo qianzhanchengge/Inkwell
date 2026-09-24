@@ -1,5 +1,5 @@
 <template>
-  <div class="article-editor">
+  <div class="article-editor page-stack">
     <PageHeader :title="isEdit ? '编辑文章' : '新建文章'" show-back back-to="/articles" />
 
     <el-card>
@@ -25,10 +25,16 @@
           <MarkdownEditor v-model="form.content" />
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" :loading="saving" @click="onSave">保存草稿</el-button>
-          <el-button type="success" :loading="publishing" @click="onPublish">发布</el-button>
-          <el-button @click="openNotePicker">📝 从笔记导入</el-button>
-          <el-button @click="goBack">取消</el-button>
+          <div class="editor-actions">
+            <el-button @click="goBack">取消</el-button>
+            <div class="editor-actions__right">
+              <el-button @click="openNotePicker">
+                <AppIcon name="doc" :size="15" />从笔记导入
+              </el-button>
+              <el-button :loading="saving" @click="onSave">保存草稿</el-button>
+              <el-button type="primary" :loading="publishing" @click="onPublish">发布</el-button>
+            </div>
+          </div>
         </el-form-item>
       </el-form>
     </el-card>
@@ -68,6 +74,7 @@ import { reactive, ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import PageHeader from '@/components/PageHeader.vue'
+import AppIcon from '@/components/AppIcon.vue'
 import MarkdownEditor from '@/components/MarkdownEditor.vue'
 import TagSelector from '@/components/TagSelector.vue'
 import { createArticle, updateArticle, getArticle, publishArticle } from '@/api/article'
@@ -221,6 +228,21 @@ onMounted(() => {
 </script>
 
 <style scoped>
+/* 表单底部操作区：左「取消」/ 右主操作 */
+.editor-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+}
+
+.editor-actions__right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .note-pick-list {
   max-height: 360px;
   overflow-y: auto;

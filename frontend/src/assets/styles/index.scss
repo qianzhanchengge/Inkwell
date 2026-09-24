@@ -1,5 +1,65 @@
 @use './variables.scss' as *;
 
+/* ============================================================================
+   应用级设计 token —— 工作台与博客共用一套设计语言
+   命名沿用 --blog-*（博客前台先落地时引入），此处提升为全局：
+   工作台后台与博客前台共同消费，避免两套色板漂移。
+   ============================================================================ */
+:root {
+  /* —— 品牌色板（Inkwell 墨感：暖白纸 + 墨黑字 + 印章红）—— */
+  --blog-paper: #faf9f7;
+  --blog-surface: #ffffff;
+  --blog-ink: #14161a;
+  --blog-ink-soft: #4a4f57;
+  --blog-ink-mute: #8b9099;
+  --blog-line: #e9e6e1;
+  --blog-accent: #b4443a;
+  --blog-accent-dark: #90362e;
+  --blog-accent-soft: #f8eceb;
+
+  /* —— 阴影：随背景暖调着色，非纯黑 —— */
+  --blog-shadow-sm: 0 1px 2px rgba(28, 22, 18, 0.05);
+  --blog-shadow-md: 0 1px 2px rgba(28, 22, 18, 0.04), 0 10px 28px -14px rgba(28, 22, 18, 0.16);
+  --blog-shadow-lg: 0 2px 4px rgba(28, 22, 18, 0.04), 0 18px 40px -18px rgba(28, 22, 18, 0.22);
+
+  /* —— 形状与尺度 —— */
+  --blog-radius: 10px;
+  --blog-radius-sm: 6px;
+  --blog-container: 1120px;
+  --blog-reading: 720px;
+  --blog-page-max: 1320px; /* 工作台内容区最大宽度 */
+
+  /* —— Element Plus 主题覆盖（全局，工作台 + 博客统一）—— */
+  --el-color-primary: #b4443a;
+  --el-color-primary-dark-2: #90362e;
+  --el-color-primary-light-3: #cb7c75;
+  --el-color-primary-light-5: #daa29d;
+  --el-color-primary-light-7: #e9c7c4;
+  --el-color-primary-light-8: #f0dad8;
+  --el-color-primary-light-9: #f8eceb;
+  --el-text-color-primary: #14161a;
+  --el-text-color-regular: #4a4f57;
+  --el-text-color-secondary: #8b9099;
+  --el-text-color-placeholder: #a8adb5;
+  --el-border-color: #e9e6e1;
+  --el-border-color-light: #efece8;
+  --el-border-color-lighter: #f2f0ec;
+  --el-bg-color: #ffffff;
+  --el-bg-color-page: #faf9f7;
+  --el-border-radius-base: 8px;
+  --el-card-border-color: transparent;
+  --el-box-shadow-light: var(--blog-shadow-md);
+  --el-font-size-base: 14px;
+
+  /* 控件统一高度（按钮 / 输入框一致，避免行高参差） */
+  --el-component-size-large: 40px;
+  --el-component-size: 34px;
+  --el-component-size-small: 30px;
+}
+
+/* ============================================================================
+   基础基线
+   ============================================================================ */
 * {
   box-sizing: border-box;
 }
@@ -24,12 +84,287 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
     'PingFang SC', 'HarmonyOS Sans SC', 'Source Han Sans SC', 'Noto Sans CJK SC', 'Hiragino Sans GB',
     'Microsoft YaHei', sans-serif;
-  color: $text-color;
-  background-color: $bg-color;
+  color: var(--blog-ink);
+  background-color: var(--blog-paper);
   -webkit-font-smoothing: antialiased;
 }
 
 a {
   text-decoration: none;
-  color: $primary-color;
+  color: var(--blog-accent);
+}
+
+/* 键盘可达性：统一焦点环 */
+:focus-visible {
+  outline: 2px solid var(--blog-accent);
+  outline-offset: 2px;
+}
+
+/* ============================================================================
+   页面节奏（工作台页面统一使用）
+   ============================================================================ */
+.page-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.page-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+
+.page-toolbar__info {
+  font-size: 13px;
+  color: var(--blog-ink-mute);
+}
+
+.page-toolbar__actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* 表单页底部操作区：左取消 / 右主操作 */
+.form-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  width: 100%;
+}
+
+/* ============================================================================
+   Element Plus 收敛
+   ============================================================================ */
+
+/* —— 按钮 —— */
+.el-button {
+  border-radius: var(--blog-radius-sm);
+  font-weight: 500;
+  transition: background-color 0.2s, border-color 0.2s, color 0.2s, transform 0.15s,
+    box-shadow 0.2s;
+}
+
+.el-button:not(.is-text):not(.is-link):not(.is-disabled):active {
+  transform: translateY(1px);
+}
+
+.el-button--primary {
+  --el-button-bg-color: var(--blog-accent);
+  --el-button-border-color: var(--blog-accent);
+  --el-button-hover-bg-color: var(--blog-accent-dark);
+  --el-button-hover-border-color: var(--blog-accent-dark);
+  --el-button-active-bg-color: var(--blog-accent-dark);
+  --el-button-active-border-color: var(--blog-accent-dark);
+}
+
+.el-button--primary:not(.is-disabled):hover {
+  box-shadow: var(--blog-shadow-sm);
+}
+
+.el-button--default {
+  --el-button-bg-color: var(--blog-surface);
+  --el-button-border-color: var(--blog-line);
+  --el-button-text-color: var(--blog-ink-soft);
+  --el-button-hover-bg-color: var(--blog-accent-soft);
+  --el-button-hover-border-color: var(--blog-accent);
+  --el-button-hover-text-color: var(--blog-accent);
+  --el-button-active-bg-color: var(--blog-accent-soft);
+  --el-button-active-border-color: var(--blog-accent);
+  --el-button-active-text-color: var(--blog-accent);
+}
+
+.el-button.is-link,
+.el-button.is-text {
+  border-radius: var(--blog-radius-sm);
+  padding: 2px 8px;
+  transition: background-color 0.2s, color 0.2s, transform 0.15s;
+}
+
+.el-button.is-link:not(.is-disabled):hover,
+.el-button.is-text:not(.is-disabled):hover {
+  background-color: var(--blog-accent-soft);
+}
+
+/* 相邻操作按钮间距收紧到 8px（列表行内操作） */
+.el-button + .el-button {
+  margin-left: 8px;
+}
+
+/* —— 输入框 / 搜索框 —— */
+.el-input__wrapper,
+.el-textarea__inner {
+  border-radius: var(--blog-radius-sm);
+  background-color: var(--blog-surface);
+  box-shadow: 0 0 0 1px var(--blog-line) inset;
+  transition: box-shadow 0.2s, background-color 0.2s;
+}
+
+.el-input__wrapper:hover,
+.el-textarea__inner:hover {
+  box-shadow: 0 0 0 1px var(--blog-ink-mute) inset;
+}
+
+.el-input__wrapper.is-focus,
+.el-textarea__inner:focus {
+  box-shadow: 0 0 0 1px var(--blog-accent) inset, 0 0 0 3px var(--blog-accent-soft) !important;
+}
+
+.el-input-number .el-input__wrapper {
+  border-radius: var(--blog-radius-sm);
+}
+
+/* —— 表格 —— */
+.el-table {
+  --el-table-border-color: var(--blog-line);
+  --el-table-header-bg-color: var(--blog-paper);
+  --el-table-header-text-color: var(--blog-ink-soft);
+  --el-table-row-hover-bg-color: var(--blog-paper);
+  --el-table-text-color: var(--blog-ink);
+  border-radius: var(--blog-radius-sm);
+}
+
+.el-table th.el-table__cell {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.el-table td.el-table__cell,
+.el-table th.el-table__cell {
+  padding: 12px 0;
+}
+
+/* 去掉表格底部与右侧的粗边框线（由卡片承载边界） */
+.el-table::before,
+.el-table__inner-wrapper::before {
+  display: none;
+}
+
+/* —— 卡片 —— */
+.el-card {
+  border: none;
+  border-radius: var(--blog-radius);
+  box-shadow: var(--blog-shadow-sm);
+  overflow: hidden;
+}
+
+.el-card__body {
+  padding: 20px 22px;
+}
+
+/* —— 分页 —— */
+.el-pagination {
+  --el-pagination-button-bg-color: var(--blog-surface);
+  --el-pagination-hover-color: var(--blog-accent);
+}
+
+.el-pager li {
+  border-radius: var(--blog-radius-sm);
+  font-weight: 500;
+}
+
+.el-pager li.is-active {
+  background: var(--blog-accent);
+  color: #fff;
+}
+
+/* —— 标签 —— */
+.el-tag {
+  border-radius: var(--blog-radius-sm);
+  font-weight: 500;
+}
+
+/* —— 弹窗 / 消息 —— */
+.el-dialog {
+  border-radius: var(--blog-radius);
+  box-shadow: var(--blog-shadow-lg);
+}
+
+.el-dialog__header {
+  margin-right: 0;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--blog-line);
+}
+
+.el-dialog__title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--blog-ink);
+}
+
+.el-message,
+.el-message-box {
+  border-radius: var(--blog-radius);
+  box-shadow: var(--blog-shadow-md);
+}
+
+.el-message-box__title {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+/* —— 下拉菜单 —— */
+.el-dropdown-menu {
+  padding: 6px;
+}
+
+.el-dropdown-menu__item {
+  border-radius: var(--blog-radius-sm);
+  font-size: 14px;
+}
+
+.el-dropdown-menu__item:not(.is-disabled):hover {
+  background-color: var(--blog-accent-soft);
+  color: var(--blog-accent);
+}
+
+/* —— 空状态 —— */
+.el-empty__description p {
+  color: var(--blog-ink-mute);
+  font-size: 13px;
+}
+
+/* —— 按钮内图标间距 —— */
+.el-button .app-icon {
+  margin-right: 5px;
+}
+
+.el-button .app-icon:last-child {
+  margin-right: 0;
+}
+
+/* ============================================================================
+   工作台专属：卡片标题（小标题 + 强调色竖条），与博客侧栏 widget 标题一致。
+   以 .layout 限定作用域，不影响博客前台既有视觉。
+   ============================================================================ */
+.layout .el-card__header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 22px;
+  border-bottom: 1px solid var(--blog-line);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--blog-ink);
+}
+
+.layout .el-card__header::before {
+  content: '';
+  width: 3px;
+  height: 16px;
+  border-radius: 2px;
+  background: var(--blog-accent);
+  flex: none;
+}
+
+/* 工作台表格：去掉 fixed 列的硬阴影，改用柔和分隔 */
+.layout .el-table__fixed-right::before,
+.layout .el-table__fixed::before {
+  display: none;
 }

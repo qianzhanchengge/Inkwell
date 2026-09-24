@@ -1,5 +1,5 @@
 <template>
-  <div class="note-editor">
+  <div class="note-editor page-stack">
     <PageHeader :title="isEdit ? '编辑笔记' : '新建笔记'" show-back back-to="/notes" />
 
     <el-card>
@@ -22,9 +22,15 @@
           <el-checkbox v-model="form.is_pinned">置顶</el-checkbox>
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" :loading="saving" @click="onSave">保存</el-button>
-          <el-button @click="triggerFileInput">📄 导入本地 MD 文件</el-button>
-          <el-button @click="goBack">取消</el-button>
+          <div class="editor-actions">
+            <el-button @click="goBack">取消</el-button>
+            <div class="editor-actions__right">
+              <el-button @click="triggerFileInput">
+                <AppIcon name="doc" :size="15" />导入 MD 文件
+              </el-button>
+              <el-button type="primary" :loading="saving" @click="onSave">保存</el-button>
+            </div>
+          </div>
           <input
             ref="fileInput"
             type="file"
@@ -43,6 +49,7 @@ import { reactive, ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import PageHeader from '@/components/PageHeader.vue'
+import AppIcon from '@/components/AppIcon.vue'
 import MarkdownEditor from '@/components/MarkdownEditor.vue'
 import TagSelector from '@/components/TagSelector.vue'
 import { createNote, updateNote, getNote } from '@/api/note'
@@ -142,3 +149,20 @@ onMounted(() => {
   loadNote()
 })
 </script>
+
+<style scoped lang="scss">
+/* 表单底部操作区：左「取消」/ 右主操作 */
+.editor-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+}
+
+.editor-actions__right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+</style>

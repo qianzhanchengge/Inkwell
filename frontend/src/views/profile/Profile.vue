@@ -1,5 +1,5 @@
 <template>
-  <div class="profile">
+  <div class="profile page-stack">
     <PageHeader title="个人设置" show-back />
 
     <el-card class="profile__section">
@@ -18,7 +18,9 @@
           <el-input v-model="form.bio" type="textarea" :rows="3" placeholder="个人简介" />
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" :loading="saving" @click="onSave">保存</el-button>
+          <div class="form-actions">
+            <el-button type="primary" :loading="saving" @click="onSave">保存</el-button>
+          </div>
         </el-form-item>
       </el-form>
     </el-card>
@@ -26,15 +28,18 @@
     <el-card class="profile__section">
       <template #header>头像</template>
       <div class="profile__avatar">
-        <el-avatar :size="80" :src="avatarSrc || undefined">{{ avatarFallback }}</el-avatar>
-        <el-upload
-          :auto-upload="false"
-          :show-file-list="false"
-          accept="image/png,image/jpeg,image/webp"
-          :on-change="onAvatarChange"
-        >
-          <el-button :loading="uploading">上传头像</el-button>
-        </el-upload>
+        <el-avatar :size="72" :src="avatarSrc || undefined">{{ avatarFallback }}</el-avatar>
+        <div class="profile__avatar-side">
+          <el-upload
+            :auto-upload="false"
+            :show-file-list="false"
+            accept="image/png,image/jpeg,image/webp"
+            :on-change="onAvatarChange"
+          >
+            <el-button :loading="uploading">上传头像</el-button>
+          </el-upload>
+          <span class="profile__hint">支持 PNG / JPG / WebP，建议正方形</span>
+        </div>
       </div>
     </el-card>
 
@@ -58,7 +63,11 @@
           <el-input v-model="pwdForm.confirmPassword" type="password" show-password />
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" :loading="changing" @click="onChangePassword">修改密码</el-button>
+          <div class="form-actions">
+            <el-button type="primary" :loading="changing" @click="onChangePassword">
+              修改密码
+            </el-button>
+          </div>
         </el-form-item>
       </el-form>
     </el-card>
@@ -240,12 +249,28 @@ onUnmounted(() => {
 </script>
 
 <style scoped lang="scss">
-.profile__section {
-  margin-bottom: 16px;
-}
 .profile__avatar {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 18px;
+}
+
+/* 圆角方形头像，与顶栏/博客评论头像风格一致 */
+.profile__avatar :deep(.el-avatar) {
+  border-radius: 18px;
+  background: var(--blog-accent);
+  font-size: 24px;
+}
+
+.profile__avatar-side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.profile__hint {
+  font-size: 12px;
+  color: var(--blog-ink-mute);
 }
 </style>

@@ -1,21 +1,35 @@
 <template>
-  <div class="tag-manage">
-    <PageHeader title="标签管理" show-back />
+  <div class="tag-manage page-stack">
+    <PageHeader title="标签管理" description="维护笔记与文章共用的标签" show-back />
 
     <el-card>
-      <div class="tag-manage__toolbar">
-        <el-input v-model="name" placeholder="新标签名称" style="width: 240px" />
-        <el-button type="primary" @click="onCreate">新增标签</el-button>
-      </div>
+      <PageToolbar>
+        <template #info>共 {{ tags.length }} 个标签</template>
+        <el-input
+          v-model="name"
+          placeholder="新标签名称"
+          style="width: 220px"
+          @keyup.enter="onCreate"
+        />
+        <el-button type="primary" :loading="creating" @click="onCreate">
+          <AppIcon name="plus" :size="15" />新增标签
+        </el-button>
+      </PageToolbar>
 
       <el-table :data="tags" v-loading="loading" style="width: 100%">
         <el-table-column prop="id" label="ID" width="80" />
         <el-table-column prop="name" label="名称" min-width="200" />
-        <el-table-column label="操作" width="120">
+        <el-table-column label="操作" width="140" fixed="right">
           <template #default="{ row }">
-            <el-button link type="danger" @click="onDelete(row.id)">删除</el-button>
+            <el-button link type="danger" @click="onDelete(row.id)">
+              <AppIcon name="trash" :size="14" />删除
+            </el-button>
           </template>
         </el-table-column>
+
+        <template #empty>
+          <EmptyState description="还没有标签" hint="输入名称后点击「新增标签」" />
+        </template>
       </el-table>
     </el-card>
   </div>
@@ -25,10 +39,14 @@
 import { ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import PageHeader from '@/components/PageHeader.vue'
+import PageToolbar from '@/components/PageToolbar.vue'
+import EmptyState from '@/components/EmptyState.vue'
+import AppIcon from '@/components/AppIcon.vue'
 import { getTagList, createTag, deleteTag } from '@/api/tag'
 import type { Tag } from '@/types/api'
 
 const loading = ref(false)
+const creating = ref(false)
 const name = ref('')
 const tags = ref<Tag[]>([])
 
@@ -48,10 +66,17 @@ async function onCreate() {
     ElMessage.warning('请输入标签名称')
     return
   }
-  await createTag({ name: name.value.trim() })
-  ElMessage.success('创建成功')
-  name.value = ''
-  load()
+  creating.value = true
+  try {
+    await createTag({ name: name.value.trim() })
+    ElMessage.success('创建成功')
+    name.value = ''
+    load()
+  } catch (e) {
+    // 错误提示已统一处理
+  } finally {
+    creating.value = false
+  }
 }
 
 async function onDelete(id: number) {
@@ -62,11 +87,3 @@ async function onDelete(id: number) {
 
 onMounted(load)
 </script>
-
-<style scoped lang="scss">
-.tag-manage__toolbar {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 16px;
-}
-</style>

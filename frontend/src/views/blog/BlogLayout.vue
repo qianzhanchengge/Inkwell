@@ -97,48 +97,11 @@ function onLogout() {
 
 <style scoped lang="scss">
 .blog-layout {
-  /* —— 品牌：暖白纸 + 墨黑字 + 印章红单一强调色 —— */
-  --blog-paper: #faf9f7;
-  --blog-surface: #ffffff;
-  --blog-ink: #14161a;
-  --blog-ink-soft: #4a4f57;
-  --blog-ink-mute: #8b9099;
-  --blog-line: #e9e6e1;
-  --blog-accent: #b4443a;
-  --blog-accent-dark: #90362e;
-  --blog-accent-soft: #f8eceb;
-
-  /* —— 阴影：随背景暖调着色，非纯黑 —— */
-  --blog-shadow-sm: 0 1px 2px rgba(28, 22, 18, 0.05);
-  --blog-shadow-md: 0 1px 2px rgba(28, 22, 18, 0.04), 0 10px 28px -14px rgba(28, 22, 18, 0.16);
-  --blog-shadow-lg: 0 2px 4px rgba(28, 22, 18, 0.04), 0 18px 40px -18px rgba(28, 22, 18, 0.22);
-
-  /* —— 形状与尺度 —— */
-  --blog-radius: 10px;
-  --blog-radius-sm: 6px;
-  --blog-container: 1120px;
-  --blog-reading: 720px;
-
-  /* —— 覆盖 Element Plus（仅博客作用域内生效）—— */
-  --el-color-primary: #b4443a;
-  --el-color-primary-dark-2: #90362e;
-  --el-color-primary-light-3: #cb7c75;
-  --el-color-primary-light-5: #daa29d;
-  --el-color-primary-light-7: #e9c7c4;
-  --el-color-primary-light-8: #f0dad8;
-  --el-color-primary-light-9: #f8eceb;
-  --el-text-color-primary: #14161a;
-  --el-text-color-regular: #4a4f57;
-  --el-text-color-secondary: #8b9099;
-  --el-text-color-placeholder: #a8adb5;
-  --el-border-color: #e9e6e1;
-  --el-border-color-light: #efece8;
-  --el-border-color-lighter: #f2f0ec;
-  --el-bg-color: #ffffff;
-  --el-bg-color-page: #faf9f7;
-  --el-border-radius-base: 8px;
-  --el-card-border-color: transparent;
-  --el-box-shadow-light: var(--blog-shadow-md);
+  /*
+   * 设计 token（品牌色板 / 阴影 / 圆角 / Element 主题覆盖）已提升为全局，
+   * 见 src/assets/styles/index.scss；此处仅保留博客特有项，避免两处定义漂移。
+   */
+  /* 博客正文基准字号 15px（工作台为 14px）：保持博客阅读排版不变 */
   --el-font-size-base: 15px;
 
   min-height: 100%;

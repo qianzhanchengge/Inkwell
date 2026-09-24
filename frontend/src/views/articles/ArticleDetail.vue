@@ -48,25 +48,47 @@ onMounted(load)
 <style scoped lang="scss">
 .article-detail__title {
   margin: 0 0 12px;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.3;
+  color: var(--blog-ink);
 }
+
 .article-detail__meta {
   display: flex;
-  gap: 16px;
-  color: #909399;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 18px;
   font-size: 13px;
-  margin-bottom: 16px;
+  color: var(--blog-ink-mute);
+  font-variant-numeric: tabular-nums;
 }
+
+.article-detail__meta span + span::before {
+  content: '·';
+  margin-right: 10px;
+  color: var(--blog-ink-mute);
+}
+
 .article-detail__summary {
-  color: #606266;
-  padding: 12px;
-  background: #f5f7fa;
-  border-radius: 4px;
-  margin-bottom: 16px;
+  padding: 12px 14px;
+  margin-bottom: 18px;
+  font-size: 14px;
+  color: var(--blog-ink-soft);
+  background: var(--blog-accent-soft);
+  border-left: 3px solid var(--blog-accent);
+  border-radius: var(--blog-radius-sm);
 }
+
 .article-detail__actions {
   margin-bottom: 16px;
 }
+
 .article-detail__content {
+  font-size: 15px;
   line-height: 1.8;
+  color: var(--blog-ink-soft);
 }
 </style>
