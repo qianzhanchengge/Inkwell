@@ -368,3 +368,178 @@ a {
 .layout .el-table__fixed::before {
   display: none;
 }
+
+/* ============================================================================
+   博客专用按钮体系（.blog-btn 系列）
+   仅博客前台消费；工作台走上面的 Element 收敛样式。
+   刻意定义为全局类（而非嵌在 .blog-layout 内）：404 页作为全局兜底路由时
+   会渲染在博客布局之外，仍需拿到同一套按钮样式。
+   ============================================================================ */
+.blog-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 14px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1;
+  color: var(--blog-ink-soft);
+  cursor: pointer;
+  text-decoration: none;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  transition: background-color 0.2s, border-color 0.2s, color 0.2s, transform 0.15s,
+    box-shadow 0.2s;
+
+  &:hover {
+    transform: translateY(-1px);
+  }
+
+  &:active {
+    transform: translateY(1px);
+  }
+
+  &:disabled,
+  &.is-disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    transform: none;
+  }
+}
+
+.blog-btn--primary {
+  background: var(--blog-accent);
+  border-color: var(--blog-accent);
+  color: #fff;
+
+  &:hover {
+    background: var(--blog-accent-dark);
+    border-color: var(--blog-accent-dark);
+    color: #fff;
+    box-shadow: var(--blog-shadow-sm);
+  }
+}
+
+.blog-btn--ghost {
+  background: var(--blog-surface);
+  border-color: var(--blog-line);
+  color: var(--blog-ink-soft);
+
+  &:hover {
+    border-color: var(--blog-accent);
+    color: var(--blog-accent);
+    background: var(--blog-accent-soft);
+  }
+}
+
+.blog-btn--text {
+  color: var(--blog-ink-soft);
+
+  &:hover {
+    color: var(--blog-accent);
+    background: var(--blog-accent-soft);
+  }
+}
+
+.blog-btn--active {
+  background: var(--blog-accent-soft);
+  border-color: var(--blog-accent);
+  color: var(--blog-accent);
+
+  &:hover {
+    background: var(--blog-accent-soft);
+    border-color: var(--blog-accent);
+    color: var(--blog-accent);
+  }
+}
+
+.blog-btn--sm {
+  height: 30px;
+  padding: 0 10px;
+  font-size: 13px;
+}
+
+.blog-btn--icon {
+  width: 34px;
+  padding: 0;
+}
+
+.blog-btn__plain {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--blog-ink-mute);
+  cursor: pointer;
+  transition: color 0.2s, background-color 0.2s, transform 0.15s;
+
+  &:hover {
+    color: var(--blog-accent);
+    background: var(--blog-accent-soft);
+  }
+
+  &:active {
+    transform: translateY(1px);
+  }
+}
+
+/* 回到顶部：圆形浮动按钮 */
+.blog-fab {
+  position: fixed;
+  right: 28px;
+  bottom: 28px;
+  z-index: 20;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--blog-accent);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: var(--blog-shadow-md);
+  transition: background-color 0.2s, transform 0.2s, opacity 0.2s;
+
+  &:hover {
+    background: var(--blog-accent-dark);
+    transform: translateY(-2px);
+  }
+
+  &:active {
+    transform: translateY(1px);
+  }
+}
+
+@media (max-width: 900px) {
+  .blog-fab {
+    right: 16px;
+    bottom: 16px;
+  }
+}
+
+/* ============================================================================
+   博客内容区响应式：≤900px 多列塌陷为单列
+   ============================================================================ */
+@media (max-width: 900px) {
+  .blog-split {
+    flex-direction: column !important;
+  }
+
+  .blog-split__side {
+    width: 100% !important;
+    position: static !important;
+  }
+}

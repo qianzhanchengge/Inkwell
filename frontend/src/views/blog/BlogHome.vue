@@ -8,13 +8,14 @@
       </div>
     </section>
 
-    <div class="blog-home__body">
+    <div class="blog-home__body blog-split">
       <div class="blog-home__main">
         <div class="blog-home__toolbar">
-          <el-radio-group v-model="sort" @change="onSortChange">
+          <el-radio-group v-model="sort" class="blog-home__sorts" @change="onSortChange">
             <el-radio-button value="latest">最新</el-radio-button>
             <el-radio-button value="hot">热门</el-radio-button>
           </el-radio-group>
+
           <div class="blog-home__search">
             <el-input
               v-model="keyword"
@@ -24,7 +25,7 @@
               @clear="onClearSearch"
             >
               <template #append>
-                <el-button :loading="loading" @click="onSearch">搜索</el-button>
+                <el-button type="primary" :loading="loading" @click="onSearch">搜索</el-button>
               </template>
             </el-input>
           </div>
@@ -32,16 +33,29 @@
 
         <div v-if="searching" class="blog-home__search-tip">
           <span>「{{ keyword }}」的搜索结果（共 {{ total }} 条）</span>
-          <button type="button" class="blog-home__search-reset" @click="onClearSearch">
-            返回全部文章
-          </button>
+          <button type="button" class="blog-btn__plain" @click="onClearSearch">返回全部文章</button>
         </div>
 
+        <!-- 加载态：特色卡 + 网格骨架 -->
         <template v-if="loading">
-          <ArticleCardSkeleton v-for="i in 4" :key="i" />
+          <ArticleCardSkeleton v-if="showFeatured" variant="featured" class="blog-home__featured" />
+          <div class="blog-home__grid">
+            <ArticleCardSkeleton v-for="i in 4" :key="i" variant="compact" />
+          </div>
         </template>
+
         <template v-else>
-          <ArticleCard v-for="a in articles" :key="a.id" :article="a" />
+          <ArticleCard
+            v-if="featuredArticle"
+            :article="featuredArticle"
+            variant="featured"
+            class="blog-home__featured"
+          />
+
+          <div v-if="gridArticles.length" class="blog-home__grid">
+            <ArticleCard v-for="a in gridArticles" :key="a.id" :article="a" variant="compact" />
+          </div>
+
           <el-empty v-if="!articles.length" description="暂无文章" />
         </template>
 
@@ -54,7 +68,7 @@
         />
       </div>
 
-      <aside class="blog-home__side">
+      <aside class="blog-home__side blog-split__side">
         <BlogWidget title="分类">
           <div class="blog-home__cat-list">
             <router-link v-for="c in categories" :key="c.id" :to="`/blog/categories/${c.id}`">
@@ -80,12 +94,18 @@
         </BlogWidget>
       </aside>
     </div>
+
+    <!-- 回到顶部 -->
+    <button v-if="showFab" type="button" class="blog-fab" title="回到顶部" @click="scrollToTop">
+      <AppIcon name="arrow-up" :size="18" />
+    </button>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
+import AppIcon from '@/components/AppIcon.vue'
 import ArticleCard from '@/components/ArticleCard.vue'
 import ArticleCardSkeleton from '@/components/ArticleCardSkeleton.vue'
 import BlogWidget from '@/components/BlogWidget.vue'
@@ -108,6 +128,13 @@ const pageSize = ref(10)
 const total = ref(0)
 const keyword = ref('')
 const searching = ref(false)
+
+/** 首页第一屏把首篇作为通栏特色卡；搜索态与后续分页不做特色化 */
+const showFeatured = computed(() => page.value === 1 && !searching.value && articles.value.length > 0)
+const featuredArticle = computed(() => (showFeatured.value ? articles.value[0] : null))
+const gridArticles = computed(() =>
+  featuredArticle.value ? articles.value.slice(1) : articles.value
+)
 
 async function loadFeed() {
   loading.value = true
@@ -177,6 +204,17 @@ function onSizeChange(v: number) {
   searching.value ? doSearch() : loadFeed()
 }
 
+/* ---------- 回到顶部 ---------- */
+const showFab = ref(false)
+
+function onScroll() {
+  showFab.value = window.scrollY > 600
+}
+
+function scrollToTop() {
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}
+
 onMounted(() => {
   loadFeed()
   loadSidebar()
@@ -185,6 +223,25 @@ onMounted(() => {
     keyword.value = String(q)
     doSearch()
   }
+  window.addEventListener('scroll', onScroll, { passive: true })
+  onScroll()
+})
+
+/* 顶栏搜索会 push 到 /blog?q=...；已在首页时靠 watch 响应，无需重挂组件 */
+watch(
+  () => route.query.q,
+  (q) => {
+    if (!q) return
+    const next = String(q)
+    if (next === keyword.value) return
+    keyword.value = next
+    page.value = 1
+    doSearch()
+  }
+)
+
+onUnmounted(() => {
+  window.removeEventListener('scroll', onScroll)
 })
 </script>
 
@@ -225,6 +282,7 @@ onMounted(() => {
   margin: 0 auto;
   padding: 32px 20px 56px;
   display: flex;
+  align-items: flex-start;
   gap: 24px;
 }
 
@@ -238,18 +296,52 @@ onMounted(() => {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 18px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+/* 排序：干净的分段控件 */
+.blog-home__sorts {
+  :deep(.el-radio-button__inner) {
+    height: 34px;
+    display: inline-flex;
+    align-items: center;
+    padding: 0 16px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--blog-ink-soft);
+    background: var(--blog-surface);
+    border-color: var(--blog-line);
+    box-shadow: none;
+    transition: background-color 0.2s, border-color 0.2s, color 0.2s;
+  }
+
+  :deep(.el-radio-button:first-child .el-radio-button__inner) {
+    border-radius: 8px 0 0 8px;
+  }
+
+  :deep(.el-radio-button:last-child .el-radio-button__inner) {
+    border-radius: 0 8px 8px 0;
+  }
+
+  :deep(.el-radio-button__original-radio:checked + .el-radio-button__inner) {
+    background: var(--blog-accent);
+    border-color: var(--blog-accent);
+    color: #fff;
+    box-shadow: none;
+  }
 }
 
 .blog-home__search {
   width: 280px;
+  max-width: 100%;
 }
 
 .blog-home__search-tip {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 18px;
+  margin-bottom: 20px;
   padding: 10px 14px;
   border-left: 3px solid var(--blog-accent);
   background: var(--blog-accent-soft);
@@ -258,25 +350,23 @@ onMounted(() => {
   font-size: 14px;
 }
 
-.blog-home__search-reset {
-  appearance: none;
-  border: 0;
-  background: transparent;
-  padding: 0;
-  font: inherit;
-  font-size: 14px;
-  color: var(--blog-accent);
-  cursor: pointer;
-  transition: color 0.2s;
+/* 特色卡与网格的间距 */
+.blog-home__featured {
+  margin-bottom: 20px;
+}
 
-  &:hover {
-    color: var(--blog-accent-dark);
-  }
+.blog-home__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
 }
 
 .blog-home__side {
   width: 300px;
   flex-shrink: 0;
+  position: sticky;
+  top: 84px;
+  align-self: flex-start;
 }
 
 .blog-home__cat-list {
@@ -361,5 +451,32 @@ onMounted(() => {
 .blog-home__empty {
   color: var(--blog-ink-mute);
   font-size: 13px;
+}
+
+@media (max-width: 900px) {
+  .blog-home__hero {
+    padding: 36px 20px 28px;
+  }
+
+  .blog-home__hero-title {
+    font-size: 26px;
+  }
+
+  .blog-home__body {
+    padding: 24px 16px 48px;
+  }
+
+  .blog-home__grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .blog-home__search {
+    width: 100%;
+  }
+
+  .blog-home__side {
+    top: auto;
+  }
 }
 </style>

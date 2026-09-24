@@ -2,14 +2,23 @@
   <div class="blog-category">
     <!-- 某分类文章列表 -->
     <template v-if="categoryId">
-      <h2 class="blog-category__title">{{ categoryName }}</h2>
+      <header class="blog-category__head">
+        <h2 class="blog-category__title">{{ categoryName }}</h2>
+        <span class="blog-category__stat">共 {{ total }} 篇</span>
+      </header>
+
       <template v-if="loading">
-        <ArticleCardSkeleton v-for="i in 3" :key="i" />
+        <div class="blog-category__grid">
+          <ArticleCardSkeleton v-for="i in 4" :key="i" variant="compact" />
+        </div>
       </template>
       <template v-else>
-        <ArticleCard v-for="a in articles" :key="a.id" :article="a" />
-        <el-empty v-if="!articles.length" description="该分类暂无文章" />
+        <div v-if="articles.length" class="blog-category__grid">
+          <ArticleCard v-for="a in articles" :key="a.id" :article="a" variant="compact" />
+        </div>
+        <el-empty v-else description="该分类暂无文章" />
       </template>
+
       <Pagination
         :page="page"
         :page-size="pageSize"
@@ -21,8 +30,12 @@
 
     <!-- 分类导航列表 -->
     <template v-else>
-      <h2 class="blog-category__title">分类</h2>
-      <div v-loading="loading" class="blog-category__grid">
+      <header class="blog-category__head">
+        <h2 class="blog-category__title">分类</h2>
+        <span class="blog-category__stat">共 {{ categories.length }} 个</span>
+      </header>
+
+      <div v-loading="loading" class="blog-category__nav">
         <router-link
           v-for="c in categories"
           :key="c.id"
@@ -117,47 +130,107 @@ onMounted(() => {
 
 <style scoped lang="scss">
 .blog-category {
-  max-width: var(--blog-reading);
+  max-width: var(--blog-container);
   margin: 0 auto;
   padding: 40px 20px 56px;
 }
+
+/* 页头：标题 + 统计（左竖条沿用 widget 标题语言） */
+.blog-category__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--blog-line);
+}
+
 .blog-category__title {
-  margin: 0 0 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
   font-size: 24px;
   font-weight: 600;
   letter-spacing: -0.01em;
   color: var(--blog-ink);
   text-wrap: balance;
 }
+
+.blog-category__title::before {
+  content: '';
+  width: 3px;
+  height: 20px;
+  border-radius: 2px;
+  background: var(--blog-accent);
+  flex: none;
+}
+
+.blog-category__stat {
+  font-size: 13px;
+  color: var(--blog-ink-mute);
+  font-variant-numeric: tabular-nums;
+}
+
+/* 文章网格 */
 .blog-category__grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 12px;
-  margin-bottom: 20px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+  margin-bottom: 8px;
 }
+
+/* 分类导航 */
+.blog-category__nav {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 14px;
+}
+
 .blog-category__item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px;
+  padding: 16px 18px;
   border: 1px solid var(--blog-line);
   border-radius: var(--blog-radius-sm);
   background: var(--blog-surface);
   color: var(--blog-ink);
+  box-shadow: var(--blog-shadow-sm);
   transition: border-color 0.2s, color 0.2s, transform 0.2s, box-shadow 0.2s;
+
   &:hover {
     border-color: var(--blog-accent);
     color: var(--blog-accent);
-    box-shadow: var(--blog-shadow-sm);
-    transform: translateX(2px);
+    box-shadow: var(--blog-shadow-md);
+    transform: translateY(-2px);
   }
+
   &:active {
-    transform: translateX(2px) translateY(1px);
+    transform: translateY(1px);
   }
 }
+
 .blog-category__count {
   color: var(--blog-ink-mute);
   font-size: 12px;
   font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 900px) {
+  .blog-category {
+    padding: 28px 16px 48px;
+  }
+
+  .blog-category__grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .blog-category__title {
+    font-size: 21px;
+  }
 }
 </style>

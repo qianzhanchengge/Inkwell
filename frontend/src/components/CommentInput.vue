@@ -1,8 +1,8 @@
 <template>
   <div class="comment-input">
     <div v-if="replyTo" class="comment-input__reply">
-      回复 @{{ replyNickname }}
-      <el-button link size="small" @click="emit('cancel-reply')">取消回复</el-button>
+      <span>回复 @{{ replyNickname }}</span>
+      <button type="button" class="blog-btn__plain" @click="emit('cancel-reply')">取消回复</button>
     </div>
     <el-input
       v-model="content"
@@ -13,9 +13,15 @@
       placeholder="写下你的评论…"
     />
     <div class="comment-input__actions">
-      <el-button type="primary" :loading="submitting" :disabled="!content.trim()" @click="onSubmit">
-        发表评论
-      </el-button>
+      <button
+        type="button"
+        class="blog-btn blog-btn--primary blog-btn--sm"
+        :disabled="submitting || !content.trim()"
+        @click="onSubmit"
+      >
+        <span v-if="submitting" class="comment-input__spinner" aria-hidden="true"></span>
+        {{ submitting ? '提交中' : '发表评论' }}
+      </button>
     </div>
   </div>
 </template>
@@ -73,22 +79,41 @@ function onSubmit() {
     color: var(--blog-ink-mute);
     background: transparent;
   }
-
-  :deep(.el-button) {
-    transition: color 0.2s, transform 0.15s;
-  }
 }
+
 .comment-input__reply {
-  font-size: 13px;
-  color: var(--blog-ink-mute);
-  margin-bottom: 6px;
   display: flex;
   align-items: center;
   gap: 6px;
+  font-size: 13px;
+  color: var(--blog-ink-mute);
+  margin-bottom: 6px;
 }
+
 .comment-input__actions {
   margin-top: 10px;
   display: flex;
   justify-content: flex-end;
+}
+
+.comment-input__spinner {
+  width: 12px;
+  height: 12px;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: comment-spin 0.7s linear infinite;
+}
+
+@keyframes comment-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .comment-input__spinner {
+    animation: none;
+  }
 }
 </style>

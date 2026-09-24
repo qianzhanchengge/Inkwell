@@ -1,74 +1,119 @@
 <template>
-  <div class="blog-article">
-    <article class="blog-article__card">
-      <template v-if="article">
-        <h1 class="blog-article__title">{{ article.title }}</h1>
-        <div class="blog-article__meta">
-          <span v-if="article.author?.nickname" class="blog-article__author">
-            {{ article.author.nickname }}
-          </span>
-          <span v-if="article.published_at">发布于 {{ formatDateTime(article.published_at) }}</span>
-          <span>阅读 {{ article.view_count }}</span>
-          <span>点赞 {{ article.like_count }}</span>
-          <span>评论 {{ commentCount }}</span>
-          <span>分享 {{ article.share_count ?? 0 }}</span>
+  <div class="blog-article blog-split">
+    <!-- 正文列 -->
+    <div class="blog-article__main">
+      <article class="blog-article__card">
+        <template v-if="article">
+          <h1 class="blog-article__title">{{ article.title }}</h1>
+
+          <div class="blog-article__meta">
+            <span v-if="article.author?.nickname" class="blog-article__author">
+              {{ article.author.nickname }}
+            </span>
+            <span v-if="article.published_at">{{ formatDateTime(article.published_at) }}</span>
+          </div>
+
+          <div v-if="article.summary" class="blog-article__summary">{{ article.summary }}</div>
+
+          <div class="blog-article__actions">
+            <LikeButton
+              :article-id="article.id"
+              :liked="article.is_liked"
+              :like-count="article.like_count"
+              @change="onLikeChange"
+            />
+            <FavoriteButton
+              :article-id="article.id"
+              :favorited="article.is_favorited"
+              @change="onFavoriteChange"
+            />
+            <ShareButton :article-id="article.id" />
+          </div>
+
+          <div class="blog-article__content">
+            <MarkdownPreview :content="article.content" />
+          </div>
+        </template>
+        <el-skeleton v-else-if="loading" :rows="8" animated />
+        <el-empty v-else description="文章不存在或已下架" />
+      </article>
+
+      <BlogWidget v-if="article" :title="`评论（${commentCount}）`">
+        <CommentInput
+          :reply-to="replyTo"
+          :submitting="submitting"
+          @submit="onSubmitComment"
+          @cancel-reply="replyTo = null"
+        />
+        <CommentList
+          :comments="comments"
+          :current-user-id="currentUserId"
+          @reply="onReply"
+          @delete="onDeleteComment"
+        />
+      </BlogWidget>
+    </div>
+
+    <!-- 右栏（吸顶） -->
+    <aside class="blog-article__side blog-split__side">
+      <BlogWidget v-if="article" title="本篇信息">
+        <ul class="blog-article__info">
+          <li>
+            <span class="blog-article__info-label">作者</span>
+            <span class="blog-article__info-value">{{ article.author?.nickname || '—' }}</span>
+          </li>
+          <li>
+            <span class="blog-article__info-label">发布</span>
+            <span class="blog-article__info-value">
+              {{ article.published_at ? formatDate(article.published_at) : '—' }}
+            </span>
+          </li>
+          <li>
+            <span class="blog-article__info-label">阅读</span>
+            <span class="blog-article__info-value">{{ article.view_count }}</span>
+          </li>
+          <li>
+            <span class="blog-article__info-label">点赞</span>
+            <span class="blog-article__info-value">{{ article.like_count }}</span>
+          </li>
+          <li>
+            <span class="blog-article__info-label">评论</span>
+            <span class="blog-article__info-value">{{ commentCount }}</span>
+          </li>
+          <li>
+            <span class="blog-article__info-label">分享</span>
+            <span class="blog-article__info-value">{{ article.share_count ?? 0 }}</span>
+          </li>
+        </ul>
+      </BlogWidget>
+
+      <BlogWidget v-if="article" title="相关文章">
+        <div v-if="related.length" class="blog-article__related-list">
+          <router-link v-for="r in related" :key="r.id" :to="`/blog/articles/${r.id}`">
+            {{ r.title }}
+          </router-link>
         </div>
+        <el-empty v-else description="暂无相关文章" :image-size="50" />
+      </BlogWidget>
 
-        <div v-if="article.summary" class="blog-article__summary">{{ article.summary }}</div>
+      <button type="button" class="blog-btn__plain blog-article__totop" @click="scrollToTop">
+        <AppIcon name="arrow-up" :size="14" />
+        回到顶部
+      </button>
+    </aside>
 
-        <div class="blog-article__actions">
-          <LikeButton
-            :article-id="article.id"
-            :liked="article.is_liked"
-            :like-count="article.like_count"
-            @change="onLikeChange"
-          />
-          <FavoriteButton
-            :article-id="article.id"
-            :favorited="article.is_favorited"
-            @change="onFavoriteChange"
-          />
-          <ShareButton :article-id="article.id" />
-        </div>
-
-        <div class="blog-article__content">
-          <MarkdownPreview :content="article.content" />
-        </div>
-      </template>
-      <el-skeleton v-else-if="loading" :rows="8" animated />
-      <el-empty v-else description="文章不存在或已下架" />
-    </article>
-
-    <BlogWidget v-if="article" title="相关文章">
-      <div v-if="related.length" class="blog-article__related-list">
-        <router-link v-for="r in related" :key="r.id" :to="`/blog/articles/${r.id}`">
-          {{ r.title }}
-        </router-link>
-      </div>
-      <el-empty v-else description="暂无相关文章" :image-size="50" />
-    </BlogWidget>
-
-    <BlogWidget v-if="article" :title="`评论（${commentCount}）`">
-      <CommentInput
-        :reply-to="replyTo"
-        :submitting="submitting"
-        @submit="onSubmitComment"
-        @cancel-reply="replyTo = null"
-      />
-      <CommentList
-        :comments="comments"
-        :current-user-id="currentUserId"
-        @reply="onReply"
-        @delete="onDeleteComment"
-      />
-    </BlogWidget>
+    <!-- 回到顶部（浮动） -->
+    <button v-if="showFab" type="button" class="blog-fab" title="回到顶部" @click="scrollToTop">
+      <AppIcon name="arrow-up" :size="18" />
+    </button>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { onMounted, onUnmounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import AppIcon from '@/components/AppIcon.vue'
 import MarkdownPreview from '@/components/MarkdownPreview.vue'
 import BlogWidget from '@/components/BlogWidget.vue'
 import LikeButton from '@/components/LikeButton.vue'
@@ -84,7 +129,7 @@ import { useLogin } from '@/composables/useLogin'
 import type { Article } from '@/types/article'
 import type { Comment } from '@/types/comment'
 import type { RelatedArticle } from '@/types/blog'
-import { formatDateTime } from '@/utils/format'
+import { formatDate, formatDateTime } from '@/utils/format'
 
 const route = useRoute()
 const blogUserStore = useBlogUserStore()
@@ -203,19 +248,46 @@ async function onDeleteComment(comment: Comment) {
   }
 }
 
+/* ---------- 回到顶部 ---------- */
+const showFab = ref(false)
+
+function onScroll() {
+  showFab.value = window.scrollY > 600
+}
+
+function scrollToTop() {
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}
+
 onMounted(() => {
   loadArticle()
   loadRelated()
   loadComments()
   loadCurrentUser()
+  window.addEventListener('scroll', onScroll, { passive: true })
+  onScroll()
+})
+
+onUnmounted(() => {
+  window.removeEventListener('scroll', onScroll)
 })
 </script>
 
 <style scoped lang="scss">
+/* 阅读列 720 + 间距 40 + 右栏 280 */
 .blog-article {
-  max-width: var(--blog-reading);
+  max-width: 1040px;
   margin: 0 auto;
   padding: 40px 20px 56px;
+  display: flex;
+  align-items: flex-start;
+  gap: 40px;
+}
+
+.blog-article__main {
+  flex: 1;
+  min-width: 0;
+  max-width: var(--blog-reading);
 }
 
 .blog-article__card {
@@ -308,6 +380,49 @@ onMounted(() => {
   }
 }
 
+/* ---------- 右栏 ---------- */
+.blog-article__side {
+  width: 280px;
+  flex-shrink: 0;
+  position: sticky;
+  top: 84px;
+  align-self: flex-start;
+}
+
+.blog-article__info {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  li {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 7px 0;
+    font-size: 13px;
+    border-bottom: 1px solid var(--blog-line);
+
+    &:last-child {
+      border-bottom: 0;
+    }
+  }
+}
+
+.blog-article__info-label {
+  color: var(--blog-ink-mute);
+  flex-shrink: 0;
+}
+
+.blog-article__info-value {
+  color: var(--blog-ink);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .blog-article__related-list {
   display: flex;
   flex-direction: column;
@@ -331,6 +446,30 @@ onMounted(() => {
     &:active {
       transform: translateX(2px) translateY(1px);
     }
+  }
+}
+
+.blog-article__totop {
+  margin-top: 2px;
+}
+
+@media (max-width: 900px) {
+  .blog-article {
+    padding: 24px 16px 48px;
+    gap: 20px;
+  }
+
+  .blog-article__main {
+    max-width: none;
+  }
+
+  .blog-article__card {
+    padding: 20px 18px 24px;
+  }
+
+  .blog-article__side {
+    position: static;
+    top: auto;
   }
 }
 </style>

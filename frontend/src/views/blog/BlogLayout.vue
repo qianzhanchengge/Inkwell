@@ -22,13 +22,31 @@
         </nav>
 
         <div class="blog-layout__right">
+          <form class="blog-layout__search" @submit.prevent="onHeaderSearch">
+            <AppIcon name="search" :size="15" class="blog-layout__search-icon" />
+            <input
+              v-model="headerKeyword"
+              class="blog-layout__search-input"
+              type="search"
+              placeholder="搜索文章"
+              aria-label="搜索文章"
+            />
+          </form>
+
           <template v-if="blogUserStore.token">
             <span class="blog-layout__user">
               {{ blogUserStore.userInfo?.nickname || blogUserStore.userInfo?.username || '博客用户' }}
             </span>
-            <button type="button" class="blog-layout__link" @click="onLogout">退出</button>
+            <button type="button" class="blog-btn blog-btn--sm blog-btn--ghost" @click="onLogout">
+              退出
+            </button>
           </template>
-          <button v-else type="button" class="blog-layout__link" @click="openLoginDialog">
+          <button
+            v-else
+            type="button"
+            class="blog-btn blog-btn--sm blog-btn--ghost"
+            @click="openLoginDialog"
+          >
             登录
           </button>
           <router-link v-if="hasWorkbenchToken" to="/dashboard" class="blog-layout__wb">
@@ -56,16 +74,26 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import { useRoute } from 'vue-router'
+import { computed, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import AppIcon from '@/components/AppIcon.vue'
 import { useBlogUserStore } from '@/stores/blogUser'
 import { useLoginDialogStore } from '@/stores/loginDialog'
 import { getToken } from '@/utils/auth'
 
 const route = useRoute()
+const router = useRouter()
 const blogUserStore = useBlogUserStore()
 const dialogStore = useLoginDialogStore()
+const headerKeyword = ref('')
+
+/** 顶栏搜索：跳到首页并带上 q，由首页承接搜索（所有博客页面都可搜索） */
+function onHeaderSearch() {
+  const kw = headerKeyword.value.trim()
+  if (!kw) return
+  router.push({ path: '/blog', query: { q: kw } })
+}
 
 const navItems = [
   { path: '/blog', label: '首页' },
@@ -242,32 +270,56 @@ function onLogout() {
 .blog-layout__right {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
+}
+
+/* 顶栏紧凑搜索 */
+.blog-layout__search {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 190px;
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--blog-line);
+  border-radius: 8px;
+  background: var(--blog-surface);
+  transition: border-color 0.2s, box-shadow 0.2s;
+
+  &:focus-within {
+    border-color: var(--blog-accent);
+    box-shadow: 0 0 0 3px var(--blog-accent-soft);
+  }
+}
+
+.blog-layout__search-icon {
+  color: var(--blog-ink-mute);
+  flex: none;
+}
+
+.blog-layout__search-input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--blog-ink);
+
+  &::placeholder {
+    color: var(--blog-ink-mute);
+  }
+
+  /* 去掉 type=search 的原生清除按钮，保持与整体一致 */
+  &::-webkit-search-cancel-button {
+    appearance: none;
+  }
 }
 
 .blog-layout__user {
   font-size: 14px;
   color: var(--blog-ink-soft);
-}
-
-.blog-layout__link {
-  appearance: none;
-  border: 0;
-  background: transparent;
-  padding: 0;
-  font: inherit;
-  font-size: 14px;
-  color: var(--blog-ink-soft);
-  cursor: pointer;
-  transition: color 0.2s, transform 0.15s;
-
-  &:hover {
-    color: var(--blog-accent);
-  }
-
-  &:active {
-    transform: translateY(1px);
-  }
 }
 
 .blog-layout__wb {
@@ -277,6 +329,20 @@ function onLogout() {
 
   &:hover {
     color: var(--blog-accent-dark);
+  }
+}
+
+@media (max-width: 900px) {
+  .blog-layout__search {
+    display: none;
+  }
+
+  .blog-layout__inner {
+    gap: 16px;
+  }
+
+  .blog-layout__nav {
+    gap: 14px;
   }
 }
 

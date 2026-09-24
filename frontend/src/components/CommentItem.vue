@@ -11,19 +11,30 @@
       </div>
       <div class="comment-item__content">{{ comment.content }}</div>
       <div class="comment-item__actions">
-        <el-button link size="small" :loading="liking" @click="onLike">
+        <button
+          type="button"
+          class="blog-btn blog-btn--sm blog-btn--ghost comment-item__like"
+          :class="{ 'blog-btn--active': comment.is_liked }"
+          :disabled="liking"
+          :aria-pressed="comment.is_liked"
+          @click="onLike"
+        >
+          <AppIcon name="heart" :size="13" :class="{ 'is-filled': comment.is_liked }" />
           {{ comment.is_liked ? '取消赞' : '赞' }}{{ comment.like_count ? ` ${comment.like_count}` : '' }}
-        </el-button>
-        <el-button link size="small" @click="emit('reply', comment)">回复</el-button>
-        <el-button
+        </button>
+        <button type="button" class="blog-btn__plain" @click="emit('reply', comment)">
+          <AppIcon name="comment" :size="13" />
+          回复
+        </button>
+        <button
           v-if="canDelete"
-          link
-          size="small"
-          type="danger"
+          type="button"
+          class="blog-btn__plain comment-item__del"
           @click="emit('delete', comment)"
         >
+          <AppIcon name="trash" :size="13" />
           删除
-        </el-button>
+        </button>
       </div>
       <div v-if="children.length" class="comment-item__children">
         <CommentItem
@@ -42,6 +53,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import AppIcon from '@/components/AppIcon.vue'
 import { toggleCommentLike } from '@/api/comment'
 import { useLogin } from '@/composables/useLogin'
 import type { Comment } from '@/types/comment'
@@ -133,35 +145,32 @@ async function onLike() {
   color: var(--blog-ink-soft);
   font-size: 15px;
   line-height: 1.7;
-  margin: 6px 0 4px;
+  margin: 6px 0 8px;
   white-space: pre-wrap;
   word-break: break-word;
 }
 .comment-item__actions {
   display: flex;
-  gap: 4px;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
 
-  :deep(.el-button) {
-    font-size: 13px;
-    color: var(--blog-ink-mute);
-    transition: color 0.2s, transform 0.15s;
+/* 删除：悬停时用强调色而非刺眼的正红 */
+.comment-item__del:hover {
+  color: var(--blog-accent);
+  background: var(--blog-accent-soft);
+}
 
-    &:hover {
-      color: var(--blog-accent);
-    }
-
-    &:active {
-      transform: translateY(1px);
-    }
-  }
-
-  :deep(.el-button--danger) {
-    color: var(--blog-accent);
+.is-filled {
+  :deep(path) {
+    fill: currentColor;
   }
 }
+
 /* 子回复：用左侧竖线形成层级，替代纯缩进 */
 .comment-item__children {
-  margin-top: 4px;
+  margin-top: 8px;
   padding-left: 12px;
   border-left: 2px solid var(--blog-line);
 }

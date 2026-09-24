@@ -35,6 +35,12 @@ type IconName =
   | 'inbox'
   | 'arrow-up'
   | 'arrow-down'
+  | 'heart'
+  | 'bookmark'
+  | 'share'
+  | 'comment'
+  | 'clock'
+  | 'link'
 
 /**
  * 零依赖内联 SVG 图标。
@@ -69,7 +75,16 @@ const ICONS: Record<IconName, string> = {
   inbox:
     '<path d="M6 4h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/><path d="M4 13h4l1.5 3h5L16 13h4"/>',
   'arrow-up': '<path d="M12 19V5"/><path d="M6 11l6-6 6 6"/>',
-  'arrow-down': '<path d="M12 5v14"/><path d="M6 13l6 6 6-6"/>'
+  'arrow-down': '<path d="M12 5v14"/><path d="M6 13l6 6 6-6"/>',
+  heart:
+    '<path d="M12 20s-7-4.6-7-9.5A4.5 4.5 0 0 1 12 7a4.5 4.5 0 0 1 7 3.5C19 15.4 12 20 12 20z"/>',
+  bookmark: '<path d="M7 4h10a1 1 0 0 1 1 1v15l-6-4-6 4V5a1 1 0 0 1 1-1z"/>',
+  share:
+    '<circle cx="18" cy="6" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="M8.2 10.8 15.8 7.2"/><path d="M8.2 13.2l7.6 3.6"/>',
+  comment: '<path d="M20 12a7.5 7.5 0 0 1-10.9 6.7L4 20l1.3-4.1A7.5 7.5 0 1 1 20 12z"/>',
+  clock: '<circle cx="12" cy="12" r="8"/><path d="M12 8v4.2l3 1.8"/>',
+  link:
+    '<path d="M10 13.5a3.5 3.5 0 0 0 5 0l3-3a3.5 3.5 0 1 0-5-5l-1 1"/><path d="M14 10.5a3.5 3.5 0 0 0-5 0l-3 3a3.5 3.5 0 1 0 5 5l1-1"/>'
 }
 
 const markup = computed(() => ICONS[props.name] ?? '')

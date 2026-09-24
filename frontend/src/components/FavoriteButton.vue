@@ -1,17 +1,21 @@
 <template>
-  <el-button
-    class="favorite-button"
-    :class="{ 'is-active': favorited }"
-    :loading="loading"
-    :size="size"
+  <button
+    type="button"
+    class="blog-btn favorite-button"
+    :class="[favorited ? 'blog-btn--active' : 'blog-btn--ghost', sizeClass]"
+    :disabled="loading"
+    :aria-pressed="favorited"
     @click="onClick"
   >
+    <span v-if="loading" class="blog-btn__spinner" aria-hidden="true"></span>
+    <AppIcon v-else name="bookmark" :size="15" :class="{ 'is-filled': favorited }" />
     {{ favorited ? '已收藏' : '收藏' }}
-  </el-button>
+  </button>
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
+import AppIcon from '@/components/AppIcon.vue'
 import { toggleFavorite } from '@/api/favorite'
 import { useLogin } from '@/composables/useLogin'
 
@@ -21,7 +25,7 @@ const props = withDefaults(
     favorited?: boolean
     size?: 'small' | 'default' | 'large'
   }>(),
-  { favorited: false, size: 'small' }
+  { favorited: false, size: 'default' }
 )
 
 const emit = defineEmits<{
@@ -32,10 +36,13 @@ const { ensureLogin } = useLogin()
 const loading = ref(false)
 const favorited = ref(props.favorited)
 
+const sizeClass = computed(() => (props.size === 'small' ? 'blog-btn--sm' : ''))
+
 watch(
   () => props.favorited,
   (v) => (favorited.value = v)
 )
+
 async function onClick() {
   const ok = await ensureLogin()
   if (!ok) return
@@ -53,27 +60,31 @@ async function onClick() {
 </script>
 
 <style scoped lang="scss">
-.favorite-button {
-  border-radius: var(--blog-radius-sm);
-  background: var(--blog-paper);
-  border-color: var(--blog-line);
-  color: var(--blog-ink-soft);
-  transition: background 0.2s, border-color 0.2s, color 0.2s, transform 0.15s;
-
-  &:hover {
-    border-color: var(--blog-accent);
-    color: var(--blog-accent);
-    background: var(--blog-paper);
+/* 已收藏时图标填充，强化状态 */
+.is-filled {
+  :deep(path) {
+    fill: currentColor;
   }
+}
 
-  &:active {
-    transform: translateY(1px);
+.blog-btn__spinner {
+  width: 13px;
+  height: 13px;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: favorite-spin 0.7s linear infinite;
+}
+
+@keyframes favorite-spin {
+  to {
+    transform: rotate(360deg);
   }
+}
 
-  &.is-active {
-    background: var(--blog-accent-soft);
-    border-color: var(--blog-accent-soft);
-    color: var(--blog-accent);
+@media (prefers-reduced-motion: reduce) {
+  .blog-btn__spinner {
+    animation: none;
   }
 }
 </style>

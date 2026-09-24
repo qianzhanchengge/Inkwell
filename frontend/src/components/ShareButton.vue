@@ -1,9 +1,19 @@
 <template>
-  <el-button class="share-button" :size="size" @click="onClick">分享</el-button>
+  <button
+    type="button"
+    class="blog-btn blog-btn--ghost share-button"
+    :class="sizeClass"
+    @click="onClick"
+  >
+    <AppIcon :name="copied ? 'link' : 'share'" :size="15" />
+    {{ copied ? '已复制' : '分享' }}
+  </button>
 </template>
 
 <script setup lang="ts">
+import { computed, onUnmounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
+import AppIcon from '@/components/AppIcon.vue'
 import { recordShare } from '@/api/share'
 import { useBlogUserStore } from '@/stores/blogUser'
 
@@ -12,10 +22,14 @@ const props = withDefaults(
     articleId: number
     size?: 'small' | 'default' | 'large'
   }>(),
-  { size: 'small' }
+  { size: 'default' }
 )
 
 const blogUserStore = useBlogUserStore()
+const copied = ref(false)
+const sizeClass = computed(() => (props.size === 'small' ? 'blog-btn--sm' : ''))
+
+let resetTimer: number | undefined
 
 async function copyText(text: string): Promise<boolean> {
   try {
@@ -43,7 +57,9 @@ async function onClick() {
   const url = window.location.href
   const ok = await copyText(url)
   if (ok) {
-    ElMessage.success('文章链接已复制')
+    copied.value = true
+    window.clearTimeout(resetTimer)
+    resetTimer = window.setTimeout(() => (copied.value = false), 1600)
   } else {
     ElMessage.warning('复制失败，请手动复制地址栏链接')
   }
@@ -52,24 +68,8 @@ async function onClick() {
     recordShare(props.articleId).catch(() => {})
   }
 }
+
+onUnmounted(() => {
+  window.clearTimeout(resetTimer)
+})
 </script>
-
-<style scoped lang="scss">
-.share-button {
-  border-radius: var(--blog-radius-sm);
-  background: var(--blog-paper);
-  border-color: var(--blog-line);
-  color: var(--blog-ink-soft);
-  transition: background 0.2s, border-color 0.2s, color 0.2s, transform 0.15s;
-
-  &:hover {
-    border-color: var(--blog-accent);
-    color: var(--blog-accent);
-    background: var(--blog-paper);
-  }
-
-  &:active {
-    transform: translateY(1px);
-  }
-}
-</style>
